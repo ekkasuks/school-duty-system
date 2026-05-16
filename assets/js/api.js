@@ -3,7 +3,7 @@
 //  ใส่ URL ของ Web App ที่ Deploy แล้วในตัวแปร API_URL
 // ============================================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwcRUxCGmm3P8d5iJTVR38QFcvyoz_NYiNJJStiTfHuNzKuO3KgNjOqgqpO6SqO_vwU/exec'; // ← เปลี่ยนตรงนี้
+const API_URL = 'https://script.google.com/macros/s/AKfycbz_2M-fRZnCateJJutaJjWK_TYGLM2kuq-zZjjmuh295jboKW8OSQFMjRnPiyovuBpMAA/exec'; // ← เปลี่ยนตรงนี้
 
 // ─── CORE FETCH WRAPPER ───────────────────────────────────────
 async function apiGet(action, params = {}) {
