@@ -17,51 +17,56 @@ const CONFIG = {
   },
 };
 
-// ─── CORS HEADERS ────────────────────────────────────────────
-function setCorsHeaders(output) {
-  return output
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
+// ─── RESPONSE HELPERS ────────────────────────────────────────
+// หมายเหตุ: Apps Script ContentService ไม่รองรับ setHeader จริง
+// CORS จัดการโดยฝั่ง Google อัตโนมัติเมื่อ Deploy เป็น "Anyone"
+// ฝั่ง client ต้องใช้ redirect:'follow' เท่านั้น
 
 function jsonResponse(data, statusCode = 200) {
   const payload = { status: statusCode, data: data };
-  return setCorsHeaders(
-    ContentService.createTextOutput(JSON.stringify(payload))
-  );
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function errorResponse(message, statusCode = 400) {
   const payload = { status: statusCode, error: message };
-  return setCorsHeaders(
-    ContentService.createTextOutput(JSON.stringify(payload))
-  );
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // ─── ROUTER ──────────────────────────────────────────────────
 function doGet(e) {
   try {
-    const action = e.parameter.action || '';
+    const action = (e.parameter && e.parameter.action) ? e.parameter.action : '';
+
+    // ทดสอบ ping
+    if (action === '' || action === 'ping') {
+      return jsonResponse({ message: 'API พร้อมใช้งาน', version: '1.0', time: new Date().toISOString() });
+    }
+
     switch (action) {
       case 'zones':        return handleGetZones();
       case 'students':     return handleGetStudents(e.parameter);
       case 'dashboard':    return handleGetDashboard(e.parameter);
       case 'report':       return handleGetReport(e.parameter);
       case 'photos':       return handleGetPhotos(e.parameter);
-      default:             return errorResponse('Unknown action', 404);
+      default:             return errorResponse('Unknown action: ' + action, 404);
     }
   } catch (err) {
     Logger.log('doGet Error: ' + err.toString());
-    return errorResponse('Internal Server Error: ' + err.toString(), 500);
+    return errorResponse('Server Error: ' + err.toString(), 500);
   }
 }
 
 function doPost(e) {
   try {
-    const body    = JSON.parse(e.postData.contents);
-    const action  = body.action || '';
+    // รับได้ทั้ง application/json และ text/plain (เพื่อหลีกเลี่ยง CORS preflight)
+    const raw  = e.postData ? e.postData.contents : '{}';
+    const body = JSON.parse(raw || '{}');
+    const action = body.action || '';
+
     switch (action) {
       case 'saveZone':        return handleSaveZone(body);
       case 'deleteZone':      return handleDeleteZone(body);
@@ -69,11 +74,11 @@ function doPost(e) {
       case 'deleteStudent':   return handleDeleteStudent(body);
       case 'dailyCheck':      return handleDailyCheck(body);
       case 'uploadPhoto':     return handleUploadPhoto(body);
-      default:                return errorResponse('Unknown action', 404);
+      default:                return errorResponse('Unknown action: ' + action, 404);
     }
   } catch (err) {
     Logger.log('doPost Error: ' + err.toString());
-    return errorResponse('Internal Server Error: ' + err.toString(), 500);
+    return errorResponse('Server Error: ' + err.toString(), 500);
   }
 }
 

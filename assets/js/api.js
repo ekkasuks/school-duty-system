@@ -3,30 +3,62 @@
 //  ใส่ URL ของ Web App ที่ Deploy แล้วในตัวแปร API_URL
 // ============================================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbz_2M-fRZnCateJJutaJjWK_TYGLM2kuq-zZjjmuh295jboKW8OSQFMjRnPiyovuBpMAA/exec'; // ← เปลี่ยนตรงนี้
+const API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE'; // ← เปลี่ยนตรงนี้
 
 // ─── CORE FETCH WRAPPER ───────────────────────────────────────
+// สำคัญ: Apps Script Web App จะ redirect ไป URL ใหม่เสมอ
+// ต้องใช้ redirect: 'follow' และ mode จัดการ CORS ผ่าน Apps Script ฝั่ง server
+
 async function apiGet(action, params = {}) {
   const url = new URL(API_URL);
   url.searchParams.set('action', action);
-  Object.entries(params).forEach(([k, v]) => v !== undefined && url.searchParams.set(k, v));
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+  });
 
-  const res = await fetch(url.toString(), { method: 'GET' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.status !== 200) throw new Error(json.error || 'API Error');
+  let res;
+  try {
+    res = await fetch(url.toString(), {
+      method: 'GET',
+      redirect: 'follow',   // ← จำเป็นสำหรับ Apps Script
+    });
+  } catch (netErr) {
+    throw new Error('เชื่อมต่อ API ไม่ได้: ' + netErr.message);
+  }
+
+  // Apps Script ส่ง 302 redirect → fetch follow แล้วได้ 200
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch { throw new Error('Response ไม่ใช่ JSON: ' + text.slice(0, 200)); }
+
+  if (json.status !== 200) throw new Error(json.error || 'API Error ' + json.status);
   return json.data;
 }
 
 async function apiPost(action, body = {}) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...body }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.status !== 200) throw new Error(json.error || 'API Error');
+  // Apps Script POST ต้องส่งเป็น form-urlencoded หรือ raw text
+  // ใช้ application/x-www-form-urlencoded เพื่อหลีกเลี่ยง CORS preflight
+  const payload = JSON.stringify({ action, ...body });
+
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      redirect: 'follow',            // ← จำเป็นสำหรับ Apps Script
+      headers: { 'Content-Type': 'text/plain' },  // ← หลีกเลี่ยง preflight
+      body: payload,
+    });
+  } catch (netErr) {
+    throw new Error('เชื่อมต่อ API ไม่ได้: ' + netErr.message);
+  }
+
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch { throw new Error('Response ไม่ใช่ JSON: ' + text.slice(0, 200)); }
+
+  if (json.status !== 200) throw new Error(json.error || 'API Error ' + json.status);
   return json.data;
 }
 

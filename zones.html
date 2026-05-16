@@ -43,9 +43,25 @@
       <div class="page-title"><i class="fas fa-map-marker-alt"></i> จัดการพื้นที่รับผิดชอบ</div>
       <div class="page-subtitle">เพิ่ม แก้ไข หรือปิดใช้งานพื้นที่เวร</div>
     </div>
-    <button class="btn btn-primary" style="margin-left:auto;" onclick="openAddModal()">
-      <i class="fas fa-plus"></i> เพิ่มพื้นที่ใหม่
-    </button>
+    <div style="margin-left:auto; display:flex; gap:0.5rem; flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="testConnection()">
+        <i class="fas fa-plug"></i> ทดสอบเชื่อมต่อ
+      </button>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <i class="fas fa-plus"></i> เพิ่มพื้นที่ใหม่
+      </button>
+    </div>
+  </div>
+
+  <!-- API Status Bar -->
+  <div id="api-status-bar" style="
+      background:#FEF9C3; border:1px solid #FCD34D; border-radius:10px;
+      padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.88rem; display:none;">
+    <strong><i class="fas fa-exclamation-triangle" style="color:#F59E0B;"></i> ยังไม่ได้ตั้งค่า API URL</strong>
+    <div style="margin-top:0.35rem; color:#92400E;">
+      กรุณาแก้ไข <code>assets/js/api.js</code> บรรทัดแรก → ใส่ URL จาก Apps Script Web App
+    </div>
+    <code id="api-url-display" style="display:block; margin-top:0.35rem; color:#374151; word-break:break-all;"></code>
   </div>
 
   <div class="zones-grid" id="zones-grid">
@@ -88,7 +104,54 @@
 <script>
 let zonesData = [];
 
-document.addEventListener('DOMContentLoaded', loadZones);
+document.addEventListener('DOMContentLoaded', () => {
+  // แสดง API URL ให้ตรวจสอบ
+  const bar = document.getElementById('api-status-bar');
+  const urlEl = document.getElementById('api-url-display');
+  if (urlEl) urlEl.textContent = API_URL;
+  if (bar && API_URL.includes('YOUR_APPS_SCRIPT')) {
+    bar.style.display = 'block';
+    document.getElementById('zones-grid').innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-exclamation-triangle" style="color:#F59E0B;"></i>
+        <p style="color:#92400E;">ยังไม่ได้ตั้งค่า API URL<br>กรุณาแก้ไข <code>assets/js/api.js</code></p>
+      </div>`;
+    return;
+  }
+  loadZones();
+});
+
+async function testConnection() {
+  Toast.info('กำลังทดสอบการเชื่อมต่อ...');
+  try {
+    const res = await apiGet('ping');
+    Toast.success('✅ เชื่อมต่อสำเร็จ! ' + (res.message || ''));
+  } catch (e) {
+    Toast.error('❌ เชื่อมต่อไม่ได้: ' + e.message);
+    showTroubleshoot(e.message);
+  }
+}
+
+function showTroubleshoot(errMsg) {
+  const grid = document.getElementById('zones-grid');
+  grid.innerHTML = `
+    <div style="grid-column:1/-1;">
+      <div style="background:#FEE2E2; border:1px solid #FECACA; border-radius:12px; padding:1.25rem;">
+        <h4 style="color:#991B1B; margin-bottom:0.75rem;"><i class="fas fa-times-circle"></i> เชื่อมต่อ API ไม่สำเร็จ</h4>
+        <p style="color:#7F1D1D; margin-bottom:1rem; font-size:0.9rem;">ข้อผิดพลาด: <code>${errMsg}</code></p>
+        <div style="background:#fff; border-radius:8px; padding:1rem; font-size:0.88rem; color:#374151;">
+          <strong>วิธีแก้ไขตามลำดับ:</strong>
+          <ol style="margin-top:0.5rem; padding-left:1.25rem; line-height:2;">
+            <li>เปิดไฟล์ <code>assets/js/api.js</code> แก้ <code>API_URL</code> เป็น URL จาก Apps Script</li>
+            <li>ใน Apps Script → Deploy → <strong>New Deployment</strong> (ไม่ใช่ Manage)</li>
+            <li>Who has access: <strong>Anyone</strong> (ไม่ใช่ Anyone with Google Account)</li>
+            <li>หลัง Deploy ใหม่ ได้ URL ใหม่ → Copy มาใส่ใน <code>api.js</code></li>
+            <li>ล้าง Browser Cache แล้วลองใหม่</li>
+          </ol>
+        </div>
+      </div>
+    </div>`;
+}
 
 async function loadZones() {
   Loading.show();
@@ -96,8 +159,12 @@ async function loadZones() {
     zonesData = await ZoneAPI.getAll();
     renderZones();
   } catch (e) {
+    Loading.hide();
+    showTroubleshoot(e.message);
     Toast.error('โหลดพื้นที่ไม่สำเร็จ: ' + e.message);
-  } finally { Loading.hide(); }
+    return;
+  }
+  Loading.hide();
 }
 
 function renderZones() {
