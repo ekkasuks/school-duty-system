@@ -102,8 +102,8 @@
         <div class="form-group">
           <label class="form-label">ชั้น <span class="req">*</span></label>
           <select class="form-control" id="stu-class-input">
-            <option value="1">ม.1</option><option value="2">ม.2</option><option value="3">ม.3</option>
-            <option value="4">ม.4</option><option value="5">ม.5</option><option value="6">ม.6</option>
+            <option value="1">ป.1</option><option value="2">ป.2</option><option value="3">ป.3</option>
+            <option value="4">ป.4</option><option value="5">ป.5</option><option value="6">ป.6</option>
           </select>
         </div>
         <div class="form-group">
@@ -183,7 +183,7 @@ function renderStudents() {
       <tr>
         <td><code style="font-size:0.8rem;">${s.student_id}</code></td>
         <td style="font-weight:600;">${s.fullname}</td>
-        <td>ม.${s.class}/${s.room}</td>
+        <td>ป.${s.class}/${s.room}</td>
         <td>${zone.zone_name ? `<span class="badge badge-blue">${zone.zone_name}</span>` : s.zone_id}</td>
         <td><span class="badge ${active?'badge-green':'badge-gray'}">${active?'ใช้งาน':'ปิด'}</span></td>
         <td>

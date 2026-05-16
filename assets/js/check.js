@@ -90,7 +90,7 @@ function renderStudentList() {
       <div class="att-avatar">${initials}</div>
       <div style="flex:1;">
         <div class="att-name">${s.fullname}</div>
-        <div class="att-class">ม.${s.class}/${s.room}</div>
+        <div class="att-class">ป.${s.class}/${s.room}</div>
       </div>
       <div class="att-actions">
         <button class="att-btn present-btn ${att.status==='present'?'active-present':''}"

@@ -142,7 +142,7 @@ async function renderStudentRanking(d) {
   el.innerHTML = list.slice(0, 10).map((r, i) => {
     const stu = studentMap[r.student_id] || {};
     const name = stu.fullname || r.student_id;
-    const cls  = stu.class && stu.room ? `ม.${stu.class}/${stu.room}` : '';
+    const cls  = stu.class && stu.room ? `ป.${stu.class}/${stu.room}` : '';
     return `
       <div class="ranking-item">
         <div class="rank-num ${i===0?'top1':i===1?'top2':i===2?'top3':''}">${i+1}</div>

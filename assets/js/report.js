@@ -111,7 +111,7 @@ function renderScreenReport(d) {
     <tr>
       <td>${i+1}</td>
       <td style="font-weight:600;">${r.fullname}</td>
-      <td>ม.${r.class}/${r.room}</td>
+      <td>ป.${r.class}/${r.room}</td>
       <td style="text-align:center; color:var(--accent); font-weight:700;">${r.present}</td>
       <td style="text-align:center; color:var(--danger); font-weight:700;">${r.absent}</td>
       <td style="text-align:center;">
@@ -165,7 +165,7 @@ function printReport() {
     return `<tr>
       <td style="text-align:center;">${i+1}</td>
       <td>${r.fullname}</td>
-      <td style="text-align:center;">ม.${r.class}/${r.room}</td>
+      <td style="text-align:center;">ป.${r.class}/${r.room}</td>
       <td style="text-align:center;">${r.present}</td>
       <td style="text-align:center;">${r.absent}</td>
       <td class="pct-cell ${pctClass}">${r.percent}%</td>
