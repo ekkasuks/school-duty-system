@@ -1,0 +1,226 @@
+/* ============================================================
+   print.css - Official Report Print Styles
+   Font: TH Sarabun New, 16pt body, A4 Portrait
+   ============================================================ */
+
+@font-face {
+  font-family: 'THSarabunNew';
+  src: url('../fonts/THSarabunNew.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face {
+  font-family: 'THSarabunNew';
+  src: url('../fonts/THSarabunNewBold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+@media print {
+  /* ─── HIDE ALL UI ELEMENTS ─────────────────────────────── */
+  .navbar, .mobile-menu, .navbar-hamburger,
+  .btn, .card-footer, .page-header .btn,
+  #toast-container, .loading-overlay,
+  .modal-overlay, .no-print,
+  nav, header, footer,
+  .report-controls, .report-actions { display: none !important; }
+
+  /* ─── PAGE SETUP ───────────────────────────────────────── */
+  @page {
+    size: A4 portrait;
+    margin: 1.8cm 1.5cm 2cm 2cm;
+  }
+
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  html, body {
+    font-family: 'THSarabunNew', 'Sarabun', sans-serif !important;
+    font-size: 16pt !important;
+    color: #000 !important;
+    background: #fff !important;
+    margin: 0; padding: 0;
+  }
+
+  .page-wrapper { padding: 0 !important; margin: 0 !important; }
+  .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+  /* ─── PRINT REPORT WRAPPER ─────────────────────────────── */
+  #print-report {
+    display: block !important;
+    font-family: 'THSarabunNew', 'Sarabun', sans-serif;
+    font-size: 16pt;
+    color: #000;
+    line-height: 1.5;
+  }
+
+  /* ─── DOCUMENT HEADER ──────────────────────────────────── */
+  .print-header {
+    text-align: center;
+    margin-bottom: 0.8cm;
+    padding-bottom: 0.4cm;
+    border-bottom: 2px solid #000;
+  }
+  .print-school-name {
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 0.15cm;
+  }
+  .print-title {
+    font-size: 24pt;
+    font-weight: bold;
+    margin-bottom: 0.1cm;
+  }
+  .print-subtitle {
+    font-size: 18pt;
+    font-weight: bold;
+    margin-bottom: 0.1cm;
+  }
+  .print-meta {
+    font-size: 16pt;
+    color: #333;
+  }
+
+  /* ─── SECTION TITLES ───────────────────────────────────── */
+  .print-section-title {
+    font-size: 18pt;
+    font-weight: bold;
+    margin: 0.6cm 0 0.3cm 0;
+    padding: 0.15cm 0.3cm;
+    background: #e8e8e8 !important;
+    border-left: 5px solid #333;
+    page-break-after: avoid;
+  }
+
+  /* ─── TABLES ───────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15pt;
+    margin-bottom: 0.5cm;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }
+  tbody tr { page-break-inside: avoid; page-break-after: auto; }
+
+  th {
+    background: #333 !important;
+    color: #fff !important;
+    font-weight: bold;
+    padding: 0.2cm 0.3cm;
+    border: 1px solid #000;
+    font-size: 15pt;
+    text-align: center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  td {
+    padding: 0.18cm 0.3cm;
+    border: 1px solid #000;
+    font-size: 15pt;
+    vertical-align: middle;
+  }
+  tr:nth-child(even) td {
+    background: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ─── STAR DISPLAY IN PRINT ─────────────────────────────── */
+  .print-stars { color: #000; font-size: 15pt; letter-spacing: 2px; }
+  .star-filled::before { content: '★'; }
+  .star-empty::before  { content: '☆'; }
+
+  /* ─── SUMMARY BOX ──────────────────────────────────────── */
+  .print-summary-box {
+    border: 2px solid #000;
+    padding: 0.4cm 0.6cm;
+    margin: 0.5cm 0;
+    page-break-inside: avoid;
+  }
+  .print-summary-box h4 {
+    font-size: 18pt;
+    font-weight: bold;
+    margin-bottom: 0.3cm;
+    border-bottom: 1px solid #000;
+    padding-bottom: 0.15cm;
+  }
+  .print-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16pt;
+    padding: 0.1cm 0;
+    border-bottom: 1px dotted #ccc;
+  }
+  .print-summary-row:last-child { border-bottom: none; }
+  .print-summary-label { font-weight: bold; }
+  .print-summary-value { text-align: right; }
+
+  /* ─── SIGNATURE SECTION ────────────────────────────────── */
+  .print-signatures {
+    margin-top: 1.2cm;
+    page-break-inside: avoid;
+  }
+  .print-signatures-title {
+    font-size: 16pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 0.8cm;
+  }
+  .signatures-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1cm;
+    margin-top: 0.5cm;
+  }
+  .sig-block { text-align: center; }
+  .sig-line {
+    border-bottom: 1px solid #000;
+    margin: 1.5cm 0.3cm 0.2cm 0.3cm;
+  }
+  .sig-role {
+    font-size: 15pt;
+    font-weight: bold;
+    margin-bottom: 0.1cm;
+  }
+  .sig-name {
+    font-size: 14pt;
+    color: #333;
+    min-height: 0.6cm;
+  }
+  .sig-date {
+    font-size: 14pt;
+    color: #555;
+    margin-top: 0.15cm;
+  }
+
+  /* ─── PRINT DATE FOOTER ────────────────────────────────── */
+  .print-footer {
+    position: fixed;
+    bottom: 0.8cm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 13pt;
+    color: #555;
+    border-top: 1px solid #ccc;
+    padding-top: 0.2cm;
+  }
+
+  /* ─── PAGE NUMBER ──────────────────────────────────────── */
+  .print-footer::after {
+    content: 'หน้า ' counter(page) ' จาก ' counter(pages);
+  }
+
+  /* ─── PAGE BREAK HELPERS ───────────────────────────────── */
+  .page-break-before { page-break-before: always; }
+  .page-break-after  { page-break-after: always; }
+  .no-break          { page-break-inside: avoid; }
+
+  /* ─── PERCENT BAR IN PRINT ──────────────────────────────── */
+  .pct-cell { text-align: center; font-weight: bold; }
+  .pct-high { color: #000; }
+  .pct-mid  { color: #333; }
+  .pct-low  { color: #666; text-decoration: underline; }
+
+  /* ─── HIDE SCREEN-ONLY STUFF ────────────────────────────── */
+  canvas, .chart-container, .gallery-grid,
+  .report-filter-bar, .tab-bar { display: none !important; }
+}

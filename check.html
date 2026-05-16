@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตรวจเวรประจำวัน</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.check-step {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+  margin-bottom: 1.25rem; overflow: hidden;
+}
+.step-header {
+  padding: 1rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+}
+.step-num {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+}
+.step-header h3 { font-size: 1rem; font-weight: 700; }
+.step-body { padding: 1.25rem 1.5rem; }
+
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.upload-label {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;
+}
+.upload-label i { font-size: 1rem; }
+.upload-label.problem i { color: var(--danger); }
+.upload-label.result  i { color: var(--accent); }
+
+.att-count-badge {
+  background: var(--primary); color: #fff;
+  padding: 0.15rem 0.6rem; border-radius: 99px;
+  font-size: 0.78rem; font-weight: 700; margin-left: auto;
+}
+
+#submit-btn {
+  position: sticky; bottom: 1.25rem; z-index: 10;
+  width: 100%; margin-top: 1.25rem;
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-links">
+    <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+    <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
+    <a href="zones.html"><i class="fas fa-map-marker-alt"></i> พื้นที่</a>
+    <a href="students.html"><i class="fas fa-user-graduate"></i> นักเรียน</a>
+    <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน</a>
+  </div>
+  <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรประจำวัน</a>
+  <a href="zones.html"><i class="fas fa-map-marker-alt"></i> จัดการพื้นที่เวร</a>
+  <a href="students.html"><i class="fas fa-user-graduate"></i> จัดการนักเรียน</a>
+  <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
+</div>
+
+<div class="page-wrapper">
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-title"><i class="fas fa-clipboard-check"></i> ตรวจเวรประจำวัน</div>
+    <div class="page-subtitle" id="today-sub">—</div>
+  </div>
+
+  <!-- STEP 1: Basic Info -->
+  <div class="check-step">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <h3>ข้อมูลพื้นฐาน</h3>
+    </div>
+    <div class="step-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">วันที่ตรวจเวร <span class="req">*</span></label>
+          <input type="date" class="form-control" id="check-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ชื่อผู้ตรวจเวร <span class="req">*</span></label>
+          <input type="text" class="form-control" id="inspector-name" placeholder="ชื่อ-สกุล ผู้ตรวจ">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เลือกพื้นที่รับผิดชอบ <span class="req">*</span></label>
+        <select class="form-control" id="zone-select">
+          <option value="">-- กรุณาเลือกพื้นที่ --</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Attendance -->
+  <div class="check-step">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <h3>รายชื่อนักเรียน</h3>
+      <span class="att-count-badge" id="att-count">0 คน</span>
+    </div>
+    <div class="step-body">
+      <div id="student-list-wrap">
+        <div class="empty-state">
+          <i class="fas fa-users"></i>
+          <p>เลือกพื้นที่รับผิดชอบก่อน</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Star Rating -->
+  <div class="check-step">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <h3>ประเมินความสะอาด</h3>
+    </div>
+    <div class="step-body">
+      <div class="form-group">
+        <label class="form-label">ให้คะแนนความสะอาด <span class="req">*</span></label>
+        <div class="star-group" id="star-container"></div>
+        <input type="hidden" id="star-value" value="0">
+        <div class="form-hint">แตะดาวเพื่อให้คะแนน 1-5 ดาว</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ข้อเสนอแนะ / Comment</label>
+        <textarea class="form-control" id="check-comment" placeholder="บันทึกข้อสังเกต ข้อเสนอแนะ..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Photos -->
+  <div class="check-step">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <h3>แนบรูปภาพ (ไม่บังคับ)</h3>
+    </div>
+    <div class="step-body">
+      <div class="upload-grid">
+        <!-- Problem photos -->
+        <div>
+          <div class="upload-label problem">
+            <i class="fas fa-exclamation-triangle"></i> จุดที่ไม่สะอาด
+          </div>
+          <div class="upload-zone" id="drop-problem">
+            <i class="fas fa-camera"></i>
+            <p>แตะหรือวางรูปที่นี่</p>
+          </div>
+          <div class="photo-preview-grid" id="preview-problem"></div>
+          <input type="file" id="input-problem" accept="image/*" multiple style="display:none">
+        </div>
+        <!-- Result photos -->
+        <div>
+          <div class="upload-label result">
+            <i class="fas fa-check-circle"></i> หลังทำความสะอาด
+          </div>
+          <div class="upload-zone" id="drop-result">
+            <i class="fas fa-camera"></i>
+            <p>แตะหรือวางรูปที่นี่</p>
+          </div>
+          <div class="photo-preview-grid" id="preview-result"></div>
+          <input type="file" id="input-result" accept="image/*" multiple style="display:none">
+        </div>
+      </div>
+      <div class="form-hint" style="margin-top:0.75rem;">
+        <i class="fas fa-info-circle"></i> รูปจะถูกอัปโหลดไปยัง Google Drive อัตโนมัติ
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <button class="btn btn-primary btn-lg" id="submit-btn" onclick="submitCheck()">
+    <i class="fas fa-save"></i> บันทึกการตรวจเวร
+  </button>
+
+</div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/check.js"></script>
+</body>
+</html>

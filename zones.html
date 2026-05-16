@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จัดการพื้นที่เวร</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.zones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-links">
+    <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+    <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
+    <a href="zones.html"><i class="fas fa-map-marker-alt"></i> พื้นที่</a>
+    <a href="students.html"><i class="fas fa-user-graduate"></i> นักเรียน</a>
+    <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน</a>
+  </div>
+  <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรประจำวัน</a>
+  <a href="zones.html"><i class="fas fa-map-marker-alt"></i> จัดการพื้นที่เวร</a>
+  <a href="students.html"><i class="fas fa-user-graduate"></i> จัดการนักเรียน</a>
+  <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
+</div>
+
+<div class="page-wrapper">
+<div class="container">
+
+  <div class="page-header" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <div>
+      <div class="page-title"><i class="fas fa-map-marker-alt"></i> จัดการพื้นที่รับผิดชอบ</div>
+      <div class="page-subtitle">เพิ่ม แก้ไข หรือปิดใช้งานพื้นที่เวร</div>
+    </div>
+    <button class="btn btn-primary" style="margin-left:auto;" onclick="openAddModal()">
+      <i class="fas fa-plus"></i> เพิ่มพื้นที่ใหม่
+    </button>
+  </div>
+
+  <div class="zones-grid" id="zones-grid">
+    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>กำลังโหลด...</p></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="zone-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h4 id="modal-title">เพิ่มพื้นที่ใหม่</h4>
+      <button class="modal-close" onclick="closeModal('zone-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="zone-id-input">
+      <div class="form-group">
+        <label class="form-label">ชื่อพื้นที่ <span class="req">*</span></label>
+        <input type="text" class="form-control" id="zone-name-input" placeholder="เช่น หน้าเสาธง, โรงอาหาร">
+      </div>
+      <div class="form-group">
+        <label class="toggle-wrap">
+          <input type="checkbox" id="zone-active-input" checked>
+          <span class="toggle-slider"></span>
+          <span>เปิดใช้งาน (Active)</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('zone-modal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveZone()"><i class="fas fa-save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+let zonesData = [];
+
+document.addEventListener('DOMContentLoaded', loadZones);
+
+async function loadZones() {
+  Loading.show();
+  try {
+    zonesData = await ZoneAPI.getAll();
+    renderZones();
+  } catch (e) {
+    Toast.error('โหลดพื้นที่ไม่สำเร็จ: ' + e.message);
+  } finally { Loading.hide(); }
+}
+
+function renderZones() {
+  const grid = document.getElementById('zones-grid');
+  if (!zonesData.length) {
+    grid.innerHTML = `<div class="empty-state"><i class="fas fa-map-marker-alt"></i><p>ยังไม่มีพื้นที่ กดเพิ่มพื้นที่ใหม่</p></div>`;
+    return;
+  }
+  grid.innerHTML = zonesData.map(z => {
+    const active = String(z.active).toUpperCase() === 'TRUE';
+    return `
+    <div class="zone-card fade-in">
+      <div class="zone-id">${z.zone_id}</div>
+      <div class="zone-name">${z.zone_name}</div>
+      <div class="zone-meta">
+        <span class="badge ${active ? 'badge-green' : 'badge-gray'}">
+          <i class="fas fa-circle" style="font-size:0.5rem;"></i>
+          ${active ? 'ใช้งาน' : 'ปิดใช้งาน'}
+        </span>
+      </div>
+      <div class="zone-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openEditModal('${z.zone_id}')">
+          <i class="fas fa-edit"></i> แก้ไข
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteZone('${z.zone_id}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddModal() {
+  document.getElementById('modal-title').textContent = 'เพิ่มพื้นที่ใหม่';
+  document.getElementById('zone-id-input').value     = '';
+  document.getElementById('zone-name-input').value   = '';
+  document.getElementById('zone-active-input').checked = true;
+  openModal('zone-modal');
+}
+
+function openEditModal(zoneId) {
+  const z = zonesData.find(z => z.zone_id === zoneId);
+  if (!z) return;
+  document.getElementById('modal-title').textContent  = 'แก้ไขพื้นที่';
+  document.getElementById('zone-id-input').value      = z.zone_id;
+  document.getElementById('zone-name-input').value    = z.zone_name;
+  document.getElementById('zone-active-input').checked = String(z.active).toUpperCase() === 'TRUE';
+  openModal('zone-modal');
+}
+
+async function saveZone() {
+  const name   = document.getElementById('zone-name-input').value.trim();
+  const active = document.getElementById('zone-active-input').checked;
+  const id     = document.getElementById('zone-id-input').value;
+  if (!name) return Toast.warning('กรุณากรอกชื่อพื้นที่');
+
+  Loading.show('กำลังบันทึก...');
+  try {
+    await ZoneAPI.save({ zone_id: id || undefined, zone_name: name, active });
+    Cache.clear('zones');
+    Toast.success(id ? 'แก้ไขพื้นที่สำเร็จ' : 'เพิ่มพื้นที่สำเร็จ');
+    closeModal('zone-modal');
+    await loadZones();
+  } catch (e) {
+    Toast.error('บันทึกไม่สำเร็จ: ' + e.message);
+  } finally { Loading.hide(); }
+}
+
+async function deleteZone(zoneId) {
+  if (!confirmAction('ต้องการปิดใช้งานพื้นที่นี้?')) return;
+  Loading.show();
+  try {
+    await ZoneAPI.delete(zoneId);
+    Cache.clear('zones');
+    Toast.success('ปิดใช้งานพื้นที่แล้ว');
+    await loadZones();
+  } catch (e) {
+    Toast.error('ไม่สำเร็จ: ' + e.message);
+  } finally { Loading.hide(); }
+}
+</script>
+</body>
+</html>

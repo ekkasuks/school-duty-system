@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จัดการนักเรียน</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-links">
+    <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+    <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
+    <a href="zones.html"><i class="fas fa-map-marker-alt"></i> พื้นที่</a>
+    <a href="students.html"><i class="fas fa-user-graduate"></i> นักเรียน</a>
+    <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน</a>
+  </div>
+  <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรประจำวัน</a>
+  <a href="zones.html"><i class="fas fa-map-marker-alt"></i> จัดการพื้นที่เวร</a>
+  <a href="students.html"><i class="fas fa-user-graduate"></i> จัดการนักเรียน</a>
+  <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
+</div>
+
+<div class="page-wrapper">
+<div class="container">
+
+  <div class="page-header" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <div>
+      <div class="page-title"><i class="fas fa-user-graduate"></i> จัดการนักเรียน</div>
+      <div class="page-subtitle">กำหนดนักเรียนประจำแต่ละเขตเวร</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+      <select class="form-control" id="filter-zone" style="width:auto;" onchange="filterByZone()">
+        <option value="">ทุกพื้นที่</option>
+      </select>
+      <button class="btn btn-primary" onclick="openAddStudentModal()">
+        <i class="fas fa-plus"></i> เพิ่มนักเรียน
+      </button>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="form-group" style="max-width:400px; margin-bottom:1.25rem;">
+    <div style="position:relative;">
+      <i class="fas fa-search" style="position:absolute; left:0.9rem; top:50%; transform:translateY(-50%); color:var(--text-lt);"></i>
+      <input type="text" class="form-control" id="search-input" placeholder="ค้นหาชื่อนักเรียน..." style="padding-left:2.5rem;" oninput="renderStudents()">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding:0;">
+      <div class="table-wrap">
+        <table id="student-table">
+          <thead>
+            <tr>
+              <th>รหัส</th>
+              <th>ชื่อ-สกุล</th>
+              <th>ชั้น/ห้อง</th>
+              <th>พื้นที่เวร</th>
+              <th>สถานะ</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="student-tbody">
+            <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-lt);">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:0.75rem; font-size:0.85rem; color:var(--text-lt);" id="count-label"></div>
+
+</div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="student-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h4 id="stu-modal-title">เพิ่มนักเรียนใหม่</h4>
+      <button class="modal-close" onclick="closeModal('student-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="stu-id-input">
+      <div class="form-group">
+        <label class="form-label">ชื่อ-สกุล <span class="req">*</span></label>
+        <input type="text" class="form-control" id="stu-name-input" placeholder="ชื่อ สกุล">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">ชั้น <span class="req">*</span></label>
+          <select class="form-control" id="stu-class-input">
+            <option value="1">ม.1</option><option value="2">ม.2</option><option value="3">ม.3</option>
+            <option value="4">ม.4</option><option value="5">ม.5</option><option value="6">ม.6</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ห้อง <span class="req">*</span></label>
+          <input type="number" class="form-control" id="stu-room-input" min="1" max="20" placeholder="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">พื้นที่รับผิดชอบ <span class="req">*</span></label>
+        <select class="form-control" id="stu-zone-input"></select>
+      </div>
+      <div class="form-group">
+        <label class="toggle-wrap">
+          <input type="checkbox" id="stu-active-input" checked>
+          <span class="toggle-slider"></span>
+          <span>เปิดใช้งาน (Active)</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('student-modal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveStudent()"><i class="fas fa-save"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+let studentsAll = [];
+let zonesAll    = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  Loading.show();
+  try {
+    [studentsAll, zonesAll] = await Promise.all([StudentAPI.getAll(), ZoneAPI.getAll()]);
+    populateZoneFilters();
+    renderStudents();
+  } catch(e) { Toast.error('โหลดข้อมูลไม่สำเร็จ: ' + e.message); }
+  finally { Loading.hide(); }
+});
+
+function populateZoneFilters() {
+  const filter   = document.getElementById('filter-zone');
+  const stuZone  = document.getElementById('stu-zone-input');
+  const activeZ  = zonesAll.filter(z => String(z.active).toUpperCase() === 'TRUE');
+  activeZ.forEach(z => {
+    [filter, stuZone].forEach(sel => {
+      const opt = document.createElement('option');
+      opt.value = z.zone_id; opt.textContent = `[${z.zone_id}] ${z.zone_name}`;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function filterByZone() { renderStudents(); }
+
+function renderStudents() {
+  const zoneFilter = document.getElementById('filter-zone').value;
+  const search     = (document.getElementById('search-input').value || '').trim().toLowerCase();
+  let list = studentsAll;
+  if (zoneFilter) list = list.filter(s => s.zone_id === zoneFilter);
+  if (search)     list = list.filter(s => s.fullname.toLowerCase().includes(search));
+
+  const tbody = document.getElementById('student-tbody');
+  document.getElementById('count-label').textContent = `แสดง ${list.length} รายการ`;
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-lt);">ไม่พบข้อมูล</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(s => {
+    const zone   = zonesAll.find(z => z.zone_id === s.zone_id) || {};
+    const active = String(s.active).toUpperCase() === 'TRUE';
+    return `
+      <tr>
+        <td><code style="font-size:0.8rem;">${s.student_id}</code></td>
+        <td style="font-weight:600;">${s.fullname}</td>
+        <td>ม.${s.class}/${s.room}</td>
+        <td>${zone.zone_name ? `<span class="badge badge-blue">${zone.zone_name}</span>` : s.zone_id}</td>
+        <td><span class="badge ${active?'badge-green':'badge-gray'}">${active?'ใช้งาน':'ปิด'}</span></td>
+        <td>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn btn-secondary btn-sm" onclick="openEditStudentModal('${s.student_id}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.student_id}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function openAddStudentModal() {
+  document.getElementById('stu-modal-title').textContent = 'เพิ่มนักเรียนใหม่';
+  document.getElementById('stu-id-input').value    = '';
+  document.getElementById('stu-name-input').value  = '';
+  document.getElementById('stu-class-input').value = '1';
+  document.getElementById('stu-room-input').value  = '';
+  document.getElementById('stu-zone-input').value  = '';
+  document.getElementById('stu-active-input').checked = true;
+  openModal('student-modal');
+}
+
+function openEditStudentModal(studentId) {
+  const s = studentsAll.find(s => s.student_id === studentId);
+  if (!s) return;
+  document.getElementById('stu-modal-title').textContent = 'แก้ไขข้อมูลนักเรียน';
+  document.getElementById('stu-id-input').value    = s.student_id;
+  document.getElementById('stu-name-input').value  = s.fullname;
+  document.getElementById('stu-class-input').value = s.class;
+  document.getElementById('stu-room-input').value  = s.room;
+  document.getElementById('stu-zone-input').value  = s.zone_id;
+  document.getElementById('stu-active-input').checked = String(s.active).toUpperCase() === 'TRUE';
+  openModal('student-modal');
+}
+
+async function saveStudent() {
+  const name   = document.getElementById('stu-name-input').value.trim();
+  const cls    = document.getElementById('stu-class-input').value;
+  const room   = document.getElementById('stu-room-input').value.trim();
+  const zoneId = document.getElementById('stu-zone-input').value;
+  const active = document.getElementById('stu-active-input').checked;
+  const id     = document.getElementById('stu-id-input').value;
+
+  if (!name)   return Toast.warning('กรุณากรอกชื่อ-สกุล');
+  if (!room)   return Toast.warning('กรุณากรอกห้อง');
+  if (!zoneId) return Toast.warning('กรุณาเลือกพื้นที่');
+
+  Loading.show('กำลังบันทึก...');
+  try {
+    await StudentAPI.save({ student_id: id||undefined, fullname:name, class:cls, room, zone_id:zoneId, active });
+    Toast.success(id ? 'แก้ไขข้อมูลสำเร็จ' : 'เพิ่มนักเรียนสำเร็จ');
+    closeModal('student-modal');
+    studentsAll = await StudentAPI.getAll();
+    renderStudents();
+  } catch(e) { Toast.error('บันทึกไม่สำเร็จ: ' + e.message); }
+  finally { Loading.hide(); }
+}
+
+async function deleteStudent(studentId) {
+  if (!confirmAction('ต้องการลบนักเรียนนี้?')) return;
+  Loading.show();
+  try {
+    await StudentAPI.delete(studentId);
+    Toast.success('ลบนักเรียนแล้ว');
+    studentsAll = await StudentAPI.getAll();
+    renderStudents();
+  } catch(e) { Toast.error('ไม่สำเร็จ: ' + e.message); }
+  finally { Loading.hide(); }
+}
+</script>
+</body>
+</html>

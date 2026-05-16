@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - ตรวจเวร</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.section-title {
+  font-size: 1.05rem; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem;
+}
+.section-title i { color: var(--primary); }
+.top-zone-banner {
+  background: linear-gradient(135deg, #98D8AA, #6cbf88);
+  border-radius: var(--radius); padding: 1.25rem 1.5rem; color: #fff;
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;
+}
+.top-zone-banner .icon { font-size: 2rem; }
+.top-zone-banner .label { font-size: 0.85rem; opacity: 0.85; }
+.top-zone-banner .name  { font-size: 1.25rem; font-weight: 700; }
+.top-zone-banner .stars { font-size: 1.1rem; letter-spacing: 2px; }
+.bottom-zone-banner {
+  background: linear-gradient(135deg, #FF7B7B, #e05f5f);
+  border-radius: var(--radius); padding: 1.25rem 1.5rem; color: #fff;
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;
+}
+.tab-bar {
+  display: flex; gap: 0.5rem; margin-bottom: 1rem;
+}
+.tab-btn {
+  padding: 0.5rem 1.1rem; border-radius: 99px; font-size: 0.88rem;
+  font-weight: 600; border: 1.5px solid var(--border); background: #fff;
+  cursor: pointer; color: var(--text-lt); font-family: var(--font); transition: all 0.2s;
+}
+.tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-links">
+    <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+    <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
+    <a href="zones.html"><i class="fas fa-map-marker-alt"></i> พื้นที่</a>
+    <a href="students.html"><i class="fas fa-user-graduate"></i> นักเรียน</a>
+    <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน</a>
+  </div>
+  <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรประจำวัน</a>
+  <a href="zones.html"><i class="fas fa-map-marker-alt"></i> จัดการพื้นที่เวร</a>
+  <a href="students.html"><i class="fas fa-user-graduate"></i> จัดการนักเรียน</a>
+  <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
+</div>
+
+<div class="page-wrapper">
+<div class="container">
+
+  <div class="page-header" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <div>
+      <div class="page-title"><i class="fas fa-chart-pie"></i> Dashboard</div>
+      <div class="page-subtitle" id="dash-date-label">กำลังโหลด...</div>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center;">
+      <input type="date" class="form-control" id="dash-date" style="width:auto;">
+      <button class="btn btn-secondary" onclick="loadDashboard()">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card fade-in">
+      <div class="stat-icon yellow"><i class="fas fa-star"></i></div>
+      <div><div class="stat-value" id="stat-avg-star">—</div><div class="stat-label">ดาวเฉลี่ยวันนี้</div></div>
+    </div>
+    <div class="stat-card fade-in">
+      <div class="stat-icon blue"><i class="fas fa-clipboard-check"></i></div>
+      <div><div class="stat-value" id="stat-checks">—</div><div class="stat-label">ครั้งที่ตรวจวันนี้</div></div>
+    </div>
+    <div class="stat-card fade-in">
+      <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+      <div><div class="stat-value" id="stat-present">—</div><div class="stat-label">นักเรียนมาเวร</div></div>
+    </div>
+    <div class="stat-card fade-in">
+      <div class="stat-icon pink"><i class="fas fa-user-times"></i></div>
+      <div><div class="stat-value" id="stat-absent">—</div><div class="stat-label">นักเรียนขาดเวร</div></div>
+    </div>
+  </div>
+
+  <!-- TOP/BOTTOM ZONE -->
+  <div class="grid-2" style="margin-top:1.25rem;" id="zone-banners">
+    <div class="top-zone-banner">
+      <div class="icon">🏆</div>
+      <div>
+        <div class="label">เขตสะอาดที่สุดวันนี้</div>
+        <div class="name" id="top-zone-name">—</div>
+        <div class="stars" id="top-zone-stars">—</div>
+      </div>
+    </div>
+    <div class="bottom-zone-banner">
+      <div class="icon">⚠️</div>
+      <div>
+        <div class="label">เขตที่ต้องปรับปรุง</div>
+        <div class="name" id="bot-zone-name">—</div>
+        <div class="stars" id="bot-zone-stars">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREND CHART -->
+  <div class="card" style="margin-top:1.25rem;">
+    <div class="card-header">
+      <i class="fas fa-chart-line" style="color:var(--primary);"></i>
+      <h3>กราฟดาวเฉลี่ยย้อนหลัง</h3>
+      <div style="margin-left:auto;">
+        <div class="tab-bar">
+          <button class="tab-btn active" id="tab7"  onclick="switchTab(7)">7 วัน</button>
+          <button class="tab-btn"        id="tab30" onclick="switchTab(30)">30 วัน</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="chart-container"><canvas id="trend-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ZONE RANKING & STUDENT RANKING -->
+  <div class="grid-2" style="margin-top:1.25rem;">
+    <div class="card">
+      <div class="card-header green"><i class="fas fa-map-marker-alt"></i><h3>อันดับพื้นที่วันนี้</h3></div>
+      <div class="card-body">
+        <div class="ranking-list" id="zone-ranking"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header purple"><i class="fas fa-user-graduate"></i><h3>อันดับนักเรียน (% การมาเวร)</h3></div>
+      <div class="card-body">
+        <div class="ranking-list" id="student-ranking"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox"><button class="lb-close" onclick="document.getElementById('lightbox').classList.remove('open')">×</button><img id="lb-img" src="" alt=""></div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/dashboard.js"></script>
+</body>
+</html>
