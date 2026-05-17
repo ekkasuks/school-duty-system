@@ -3,7 +3,7 @@
 // ============================================================
 
 // ★ เปลี่ยน URL ตรงนี้หลัง Deploy Apps Script แล้ว ★
-const API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzyQZodNgqsDQoWd5kgIPUmnc4K3u2pcWZW9viXBOJH6s_Cr6oLIRJfaF8zc4h8TkqrFQ/exec';
 
 // ─── ตรวจสอบ URL ก่อนใช้งาน ────────────────────────────────
 function checkApiUrl() {
