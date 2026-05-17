@@ -257,7 +257,7 @@ function handleUploadPhoto(body) {
     var commaIdx  = rawBase64.indexOf(',');
     if (commaIdx !== -1) rawBase64 = rawBase64.substring(commaIdx + 1);
     rawBase64 = rawBase64.replace(/[\s\r\n]/g, '');
-    if (rawBase64.length < 100) throw new Error('base64 สั้นเกินไป: ' + rawBase64.length + ' chars');
+    if (rawBase64.length < 20) throw new Error('base64 ว่างเปล่าหรือสั้นเกินไป: ' + rawBase64.length + ' chars');
     Logger.log('base64 length after strip: ' + rawBase64.length);
 
     // ── 3. Decode + Blob ──
@@ -516,13 +516,13 @@ function fixPhotosSheet() {
 
 // ─── TEST UPLOAD (ทดสอบ upload ตรงจาก Apps Script) ───────────
 function testUpload() {
-  // PNG 1x1 pixel base64
-  var dummy = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  // PNG 8x8 สีแดง (base64 ยาวพอ)
+  var dummy = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAFklEQVQoU2P8z8BQz0AEYBxVQF8ABQABAQB/lAEAAAAAAElFTkSuQmCC';
   var res   = handleUploadPhoto({
     base64:   dummy,
     check_id: 'TEST_' + Date.now(),
     type:     'problem',
-    filename: 'test_1x1.png',
+    filename: 'test_8x8.png',
     mimeType: 'image/png',
   });
   Logger.log('testUpload: ' + res.getContent());
