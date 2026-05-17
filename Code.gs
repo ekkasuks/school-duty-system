@@ -4,6 +4,15 @@
 //  Deploy as: Web App → Execute as Me → Anyone can access
 // ============================================================
 
+// ── บังคับ OAuth Scopes (จำเป็นต้องมี ไม่งั้น DriveApp denied) ──
+// @OnlyCurrentDoc ห้ามใช้ — ต้องการ Drive + Sheets เต็ม scope
+/**
+ * @fileoverview
+ * Requires:
+ *   https://www.googleapis.com/auth/drive
+ *   https://www.googleapis.com/auth/spreadsheets
+ */
+
 // ─── CONFIG ──────────────────────────────────────────────────
 const CONFIG = {
   SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID_HERE',   // ← เปลี่ยนตรงนี้
@@ -514,9 +523,54 @@ function fixPhotosSheet() {
   }
 }
 
-// ─── TEST UPLOAD (ทดสอบ upload ตรงจาก Apps Script) ───────────
+// ─── TEST SHEET WRITE (ทดสอบเขียน Sheet อย่างเดียว) ──────────
+function testSheetWrite() {
+  Logger.log('=== testSheetWrite START ===');
+  Logger.log('SPREADSHEET_ID = ' + CONFIG.SPREADSHEET_ID);
+
+  // ตรวจว่า SPREADSHEET_ID ถูกตั้งค่าแล้ว
+  if (!CONFIG.SPREADSHEET_ID || CONFIG.SPREADSHEET_ID.includes('YOUR_')) {
+    Logger.log('ERROR: SPREADSHEET_ID ยังไม่ได้ตั้งค่า!');
+    return;
+  }
+
+  try {
+    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    Logger.log('Spreadsheet name: ' + ss.getName());
+
+    var sheet = ss.getSheetByName(CONFIG.SHEETS.PHOTOS);
+    if (!sheet) {
+      Logger.log('Photos sheet ไม่พบ — กำลังสร้างใหม่...');
+      sheet = ss.insertSheet(CONFIG.SHEETS.PHOTOS);
+      sheet.appendRow(['photo_id','check_id','type','drive_url','uploaded_at']);
+      Logger.log('สร้าง Photos sheet สำเร็จ');
+    } else {
+      Logger.log('Photos sheet พบแล้ว — แถวปัจจุบัน: ' + sheet.getLastRow());
+    }
+
+    // ทดสอบเขียนแถวตรงๆ
+    var testRow = ['PHO_TEST', 'CHK_TEST', 'problem', 'https://test.url', new Date().toString()];
+    sheet.appendRow(testRow);
+    SpreadsheetApp.flush();
+    Logger.log('appendRow สำเร็จ! แถวล่าสุด: ' + sheet.getLastRow());
+    Logger.log('=== testSheetWrite PASS ===');
+  } catch(e) {
+    Logger.log('ERROR: ' + e.toString());
+  }
+}
+
+// ─── TEST UPLOAD (ทดสอบ Drive + Sheet พร้อมกัน) ───────────────
 function testUpload() {
-  // PNG 8x8 สีแดง (base64 ยาวพอ)
+  Logger.log('=== testUpload START ===');
+  Logger.log('SPREADSHEET_ID = ' + CONFIG.SPREADSHEET_ID);
+  Logger.log('DRIVE_FOLDER_ID = ' + CONFIG.DRIVE_FOLDER_ID);
+
+  if (CONFIG.SPREADSHEET_ID.includes('YOUR_') || CONFIG.DRIVE_FOLDER_ID.includes('YOUR_')) {
+    Logger.log('ERROR: ยังไม่ได้ตั้งค่า ID — หยุด');
+    return;
+  }
+
+  // PNG 8x8 พร้อม data URI prefix
   var dummy = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAFklEQVQoU2P8z8BQz0AEYBxVQF8ABQABAQB/lAEAAAAAAElFTkSuQmCC';
   var res   = handleUploadPhoto({
     base64:   dummy,
@@ -525,5 +579,5 @@ function testUpload() {
     filename: 'test_8x8.png',
     mimeType: 'image/png',
   });
-  Logger.log('testUpload: ' + res.getContent());
+  Logger.log('testUpload result: ' + res.getContent());
 }
