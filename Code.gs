@@ -244,20 +244,36 @@ function handleDailyCheck(body) {
   return jsonResponse({ check_id: checkId, saved: true });
 }
 
-// ─── PHOTO UPLOAD HANDLER ─────────────────────────────────────
+// ─── PHOTO UPLOAD HANDLER (fixed: robust base64 + logging) ────
 function handleUploadPhoto(body) {
   try {
-    const folder   = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
-    const decoded  = Utilities.base64Decode(body.base64.split(',').pop());
-    const blob     = Utilities.newBlob(decoded, body.mimeType || 'image/jpeg', body.filename || 'photo.jpg');
-    const file     = folder.createFile(blob);
+    if (!body.base64)   throw new Error('ไม่มีข้อมูล base64');
+    if (!body.check_id) throw new Error('ไม่มี check_id');
 
+    // Strip data URI prefix safely
+    var rawBase64 = body.base64;
+    var commaIdx  = rawBase64.indexOf(',');
+    if (commaIdx !== -1) rawBase64 = rawBase64.substring(commaIdx + 1);
+    rawBase64 = rawBase64.replace(/\s/g, '');
+    if (!rawBase64) throw new Error('base64 ว่างเปล่าหลัง strip prefix');
+
+    // Decode + create blob
+    var decoded  = Utilities.base64Decode(rawBase64);
+    var mimeType = body.mimeType || 'image/jpeg';
+    var filename = body.filename || ('photo_' + Date.now() + '.jpg');
+    var blob     = Utilities.newBlob(decoded, mimeType, filename);
+
+    // Save to Drive
+    var folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+    var file   = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    const driveUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+
+    var fileId   = file.getId();
+    var driveUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
 
     // Save to Photos sheet
-    const photoId = generateId('PHO');
-    const sheet   = getSheet(CONFIG.SHEETS.PHOTOS);
+    var photoId = generateId('PHO');
+    var sheet   = getSheet(CONFIG.SHEETS.PHOTOS);
     sheet.appendRow([
       photoId,
       body.check_id,
@@ -266,9 +282,11 @@ function handleUploadPhoto(body) {
       Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
     ]);
 
-    return jsonResponse({ photo_id: photoId, drive_url: driveUrl, saved: true });
+    Logger.log('Upload OK: ' + filename + ' id=' + fileId);
+    return jsonResponse({ photo_id: photoId, file_id: fileId, drive_url: driveUrl, saved: true });
+
   } catch (err) {
-    Logger.log('Upload error: ' + err);
+    Logger.log('Upload ERROR: ' + err.toString());
     return errorResponse('Upload failed: ' + err.toString(), 500);
   }
 }

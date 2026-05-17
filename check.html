@@ -8,42 +8,104 @@
 <link rel="stylesheet" href="assets/css/print.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-.check-step {
+/* ── Zone Status Board ─────────────────────────────────── */
+.board-section-label {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.07em;
+  margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.4rem;
+  color: var(--text-lt);
+}
+.zone-pill-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.zone-pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 0.9rem; border-radius: 99px; font-size: 0.87rem;
+  font-weight: 600; cursor: pointer; border: 2px solid transparent;
+  transition: all 0.18s; user-select: none; white-space: nowrap;
+}
+.zone-pill.pending {
+  background: #FEF9C3; color: #92400E; border-color: #FCD34D;
+}
+.zone-pill.pending:hover { background: #FDE68A; transform: scale(1.04); }
+.zone-pill.done {
+  background: #D1FAE5; color: #065F46; border-color: #6EE7B7;
+}
+.zone-pill.done:hover { background: #A7F3D0; transform: scale(1.02); }
+.zone-pill .pill-star { font-size: 0.78rem; }
+.zone-divider {
+  border: none; border-top: 1px dashed var(--border);
+  margin: 0.85rem 0;
+}
+
+/* ── Form Panel ────────────────────────────────────────── */
+.check-panel {
   background: var(--card); border-radius: var(--radius);
   box-shadow: var(--shadow); border: 1px solid var(--border);
-  margin-bottom: 1.25rem; overflow: hidden;
+  overflow: hidden; margin-bottom: 1.1rem;
 }
-.step-header {
-  padding: 1rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
-  background: var(--bg2); border-bottom: 1px solid var(--border);
+.panel-header {
+  padding: 0.9rem 1.4rem; display: flex; align-items: center; gap: 0.7rem;
+  border-bottom: 1px solid var(--border);
 }
-.step-num {
-  width: 30px; height: 30px; border-radius: 50%;
+.panel-header.blue   { background: linear-gradient(90deg,#EFF6FF,#DBEAFE); }
+.panel-header.yellow { background: linear-gradient(90deg,#FEFCE8,#FEF9C3); }
+.panel-header.green  { background: linear-gradient(90deg,#F0FDF4,#DCFCE7); }
+.panel-num {
+  width: 27px; height: 27px; border-radius: 50%;
   background: var(--primary); color: #fff;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+  font-weight: 700; font-size: 0.82rem; flex-shrink: 0;
 }
-.step-header h3 { font-size: 1rem; font-weight: 700; }
-.step-body { padding: 1.25rem 1.5rem; }
+.panel-header h3 { font-size: 0.97rem; font-weight: 700; }
+.panel-body { padding: 1.1rem 1.4rem; }
 
-.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.upload-label {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;
+/* ── Attendance split sections ─────────────────────────── */
+.att-section-label {
+  font-size: 0.73rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 0.25rem 0.7rem; border-radius: 6px;
+  margin: 0.8rem 0 0.45rem;
+  display: flex; align-items: center; gap: 0.4rem;
 }
-.upload-label i { font-size: 1rem; }
-.upload-label.problem i { color: var(--danger); }
-.upload-label.result  i { color: var(--accent); }
-
+.att-section-label.pending { background: #FEF9C3; color: #92400E; }
+.att-section-label.done    { background: #F1F5F9; color: #64748B; }
 .att-count-badge {
   background: var(--primary); color: #fff;
-  padding: 0.15rem 0.6rem; border-radius: 99px;
-  font-size: 0.78rem; font-weight: 700; margin-left: auto;
+  padding: 0.12rem 0.6rem; border-radius: 99px;
+  font-size: 0.75rem; font-weight: 700; margin-left: auto;
 }
 
+/* ── Upload ────────────────────────────────────────────── */
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+.upload-label {
+  display: flex; align-items: center; gap: 0.45rem;
+  font-weight: 600; font-size: 0.87rem; margin-bottom: 0.45rem;
+}
+.upload-label.problem i { color: var(--danger); }
+.upload-label.result  i { color: #10B981; }
+.upload-progress { margin-top: 0.75rem; display: none; }
+.upload-progress.show { display: block; }
+.upload-progress-bar {
+  height: 8px; background: var(--border); border-radius: 99px; overflow: hidden;
+}
+.upload-progress-fill {
+  height: 100%; background: var(--primary); border-radius: 99px;
+  transition: width 0.35s; width: 0%;
+}
+.upload-progress-label {
+  font-size: 0.8rem; color: var(--text-lt); margin-top: 0.3rem; text-align: center;
+}
+.upload-result-list {
+  margin-top: 0.6rem; font-size: 0.82rem;
+  display: flex; flex-direction: column; gap: 0.25rem;
+}
+.upload-result-item {
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0;
+}
+.upload-result-item.ok   { color: #065F46; }
+.upload-result-item.fail { color: #991B1B; }
+
+/* ── Submit sticky ─────────────────────────────────────── */
 #submit-btn {
-  position: sticky; bottom: 1.25rem; z-index: 10;
-  width: 100%; margin-top: 1.25rem;
+  position: sticky; bottom: 1.1rem; z-index: 10;
+  width: 100%; margin-top: 0.5rem;
 }
 </style>
 </head>
@@ -75,18 +137,33 @@
 <div class="page-wrapper">
 <div class="container">
 
+  <!-- PAGE HEADER -->
   <div class="page-header">
     <div class="page-title"><i class="fas fa-clipboard-check"></i> ตรวจเวรประจำวัน</div>
     <div class="page-subtitle" id="today-sub">—</div>
   </div>
 
-  <!-- STEP 1: Basic Info -->
-  <div class="check-step">
-    <div class="step-header">
-      <div class="step-num">1</div>
+  <!-- ══ ZONE STATUS BOARD ═════════════════════════════════════ -->
+  <div class="check-panel">
+    <div class="panel-header blue">
+      <i class="fas fa-th-large" style="color:var(--primary);"></i>
+      <h3>สถานะเขตเวรวันนี้</h3>
+      <span id="board-summary" style="margin-left:auto; font-size:0.82rem; color:var(--text-lt);"></span>
+    </div>
+    <div class="panel-body" id="zone-board-body">
+      <div style="text-align:center; color:var(--text-lt); padding:0.75rem 0;">
+        <i class="fas fa-spinner fa-spin"></i> กำลังโหลด...
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 1: ข้อมูลพื้นฐาน ═══════════════════════════════ -->
+  <div class="check-panel">
+    <div class="panel-header blue">
+      <div class="panel-num">1</div>
       <h3>ข้อมูลพื้นฐาน</h3>
     </div>
-    <div class="step-body">
+    <div class="panel-body">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">วันที่ตรวจเวร <span class="req">*</span></label>
@@ -106,30 +183,28 @@
     </div>
   </div>
 
-  <!-- STEP 2: Attendance -->
-  <div class="check-step">
-    <div class="step-header">
-      <div class="step-num">2</div>
+  <!-- ══ STEP 2: รายชื่อนักเรียน ════════════════════════════ -->
+  <div class="check-panel">
+    <div class="panel-header yellow">
+      <div class="panel-num" style="background:#D97706;">2</div>
       <h3>รายชื่อนักเรียน</h3>
       <span class="att-count-badge" id="att-count">0 คน</span>
     </div>
-    <div class="step-body">
-      <div id="student-list-wrap">
-        <div class="empty-state">
-          <i class="fas fa-users"></i>
-          <p>เลือกพื้นที่รับผิดชอบก่อน</p>
-        </div>
+    <div class="panel-body" id="student-list-wrap">
+      <div class="empty-state">
+        <i class="fas fa-users"></i>
+        <p>เลือกพื้นที่รับผิดชอบก่อน</p>
       </div>
     </div>
   </div>
 
-  <!-- STEP 3: Star Rating -->
-  <div class="check-step">
-    <div class="step-header">
-      <div class="step-num">3</div>
+  <!-- ══ STEP 3: ประเมินดาว ══════════════════════════════════ -->
+  <div class="check-panel">
+    <div class="panel-header yellow">
+      <div class="panel-num" style="background:#D97706;">3</div>
       <h3>ประเมินความสะอาด</h3>
     </div>
-    <div class="step-body">
+    <div class="panel-body">
       <div class="form-group">
         <label class="form-label">ให้คะแนนความสะอาด <span class="req">*</span></label>
         <div class="star-group" id="star-container"></div>
@@ -143,42 +218,48 @@
     </div>
   </div>
 
-  <!-- STEP 4: Photos -->
-  <div class="check-step">
-    <div class="step-header">
-      <div class="step-num">4</div>
-      <h3>แนบรูปภาพ (ไม่บังคับ)</h3>
+  <!-- ══ STEP 4: รูปภาพ ══════════════════════════════════════ -->
+  <div class="check-panel">
+    <div class="panel-header green">
+      <div class="panel-num" style="background:#059669;">4</div>
+      <h3>แนบรูปภาพ <span style="font-weight:400; font-size:0.85rem; color:var(--text-lt);">(ไม่บังคับ)</span></h3>
     </div>
-    <div class="step-body">
+    <div class="panel-body">
       <div class="upload-grid">
-        <!-- Problem photos -->
         <div>
           <div class="upload-label problem">
             <i class="fas fa-exclamation-triangle"></i> จุดที่ไม่สะอาด
           </div>
           <div class="upload-zone" id="drop-problem">
             <i class="fas fa-camera"></i>
-            <p>แตะหรือวางรูปที่นี่</p>
+            <p>แตะหรือวางรูปที่นี่<br><small style="opacity:.7;">สูงสุด 3 รูป · 5MB/รูป</small></p>
           </div>
           <div class="photo-preview-grid" id="preview-problem"></div>
           <input type="file" id="input-problem" accept="image/*" multiple style="display:none">
         </div>
-        <!-- Result photos -->
         <div>
           <div class="upload-label result">
             <i class="fas fa-check-circle"></i> หลังทำความสะอาด
           </div>
           <div class="upload-zone" id="drop-result">
             <i class="fas fa-camera"></i>
-            <p>แตะหรือวางรูปที่นี่</p>
+            <p>แตะหรือวางรูปที่นี่<br><small style="opacity:.7;">สูงสุด 3 รูป · 5MB/รูป</small></p>
           </div>
           <div class="photo-preview-grid" id="preview-result"></div>
           <input type="file" id="input-result" accept="image/*" multiple style="display:none">
         </div>
       </div>
-      <div class="form-hint" style="margin-top:0.75rem;">
-        <i class="fas fa-info-circle"></i> รูปจะถูกอัปโหลดไปยัง Google Drive อัตโนมัติ
+
+      <!-- Progress bar -->
+      <div class="upload-progress" id="upload-progress">
+        <div class="upload-progress-bar">
+          <div class="upload-progress-fill" id="upload-progress-fill"></div>
+        </div>
+        <div class="upload-progress-label" id="upload-progress-label">กำลังอัปโหลด...</div>
       </div>
+
+      <!-- Upload results -->
+      <div class="upload-result-list" id="upload-result-list"></div>
     </div>
   </div>
 
