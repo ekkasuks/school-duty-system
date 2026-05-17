@@ -244,49 +244,63 @@ function handleDailyCheck(body) {
   return jsonResponse({ check_id: checkId, saved: true });
 }
 
-// ─── PHOTO UPLOAD HANDLER (fixed: robust base64 + logging) ────
+// ─── PHOTO UPLOAD HANDLER (v3: full debug + sheet fix) ─────────
 function handleUploadPhoto(body) {
   try {
+    // ── 1. Validate ──
+    Logger.log('uploadPhoto called, check_id=' + body.check_id + ' type=' + body.type + ' hasBase64=' + !!body.base64);
     if (!body.base64)   throw new Error('ไม่มีข้อมูล base64');
-    if (!body.check_id) throw new Error('ไม่มี check_id');
+    if (!body.check_id || body.check_id === 'undefined') throw new Error('check_id ไม่ถูกต้อง: ' + body.check_id);
 
-    // Strip data URI prefix safely
-    var rawBase64 = body.base64;
+    // ── 2. Strip data URI prefix ──
+    var rawBase64 = String(body.base64);
     var commaIdx  = rawBase64.indexOf(',');
     if (commaIdx !== -1) rawBase64 = rawBase64.substring(commaIdx + 1);
-    rawBase64 = rawBase64.replace(/\s/g, '');
-    if (!rawBase64) throw new Error('base64 ว่างเปล่าหลัง strip prefix');
+    rawBase64 = rawBase64.replace(/[\s\r\n]/g, '');
+    if (rawBase64.length < 100) throw new Error('base64 สั้นเกินไป: ' + rawBase64.length + ' chars');
+    Logger.log('base64 length after strip: ' + rawBase64.length);
 
-    // Decode + create blob
+    // ── 3. Decode + Blob ──
     var decoded  = Utilities.base64Decode(rawBase64);
     var mimeType = body.mimeType || 'image/jpeg';
     var filename = body.filename || ('photo_' + Date.now() + '.jpg');
     var blob     = Utilities.newBlob(decoded, mimeType, filename);
+    Logger.log('blob size: ' + blob.getBytes().length + ' bytes');
 
-    // Save to Drive
+    // ── 4. Save to Drive ──
     var folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
     var file   = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-
     var fileId   = file.getId();
     var driveUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    Logger.log('Drive OK: fileId=' + fileId);
 
-    // Save to Photos sheet
-    var photoId = generateId('PHO');
-    var sheet   = getSheet(CONFIG.SHEETS.PHOTOS);
-    sheet.appendRow([
-      photoId,
-      body.check_id,
-      body.type || 'problem',
-      driveUrl,
-      Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
-    ]);
+    // ── 5. Save to Photos sheet (เขียนตรงๆ ไม่ผ่าน getSheet เพื่อหลีกเลี่ยง cache) ──
+    var ss         = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    var photoSheet = ss.getSheetByName(CONFIG.SHEETS.PHOTOS);
+    if (!photoSheet) {
+      // สร้าง sheet ใหม่พร้อม header ถ้ายังไม่มี
+      photoSheet = ss.insertSheet(CONFIG.SHEETS.PHOTOS);
+      photoSheet.getRange(1, 1, 1, 5).setValues([['photo_id','check_id','type','drive_url','uploaded_at']]);
+      Logger.log('Photos sheet created with headers');
+    }
+    // ตรวจ header แถวที่ 1 ว่าถูกต้อง
+    var firstRow = photoSheet.getRange(1, 1, 1, 5).getValues()[0];
+    Logger.log('Photos sheet headers: ' + JSON.stringify(firstRow));
 
-    Logger.log('Upload OK: ' + filename + ' id=' + fileId);
+    var photoId   = generateId('PHO');
+    var timestamp = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
+    var newRow    = [photoId, body.check_id, body.type || 'problem', driveUrl, timestamp];
+    photoSheet.appendRow(newRow);
+    Logger.log('Sheet write OK: ' + JSON.stringify(newRow));
+
+    // ── 6. Flush ──
+    SpreadsheetApp.flush();
+
     return jsonResponse({ photo_id: photoId, file_id: fileId, drive_url: driveUrl, saved: true });
 
   } catch (err) {
-    Logger.log('Upload ERROR: ' + err.toString());
+    Logger.log('Upload ERROR: ' + err.toString() + ' | stack: ' + (err.stack || ''));
     return errorResponse('Upload failed: ' + err.toString(), 500);
   }
 }
@@ -465,4 +479,51 @@ function initSheets() {
     if (!ss.getSheetByName(name)) createSheet(ss, name);
   });
   Logger.log('Sheets initialized!');
+}
+
+// ─── FIX PHOTOS SHEET (รันครั้งเดียวถ้า Photos sheet มีปัญหา) ─
+// วิธีใช้: Apps Script Editor → เลือก fixPhotosSheet → กด Run
+function fixPhotosSheet() {
+  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.PHOTOS);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEETS.PHOTOS);
+    Logger.log('สร้าง Photos sheet ใหม่');
+  }
+
+  var lastRow  = sheet.getLastRow();
+  var lastCol  = sheet.getLastColumn();
+  var headerOK = false;
+
+  if (lastRow >= 1 && lastCol >= 5) {
+    var header = sheet.getRange(1, 1, 1, 5).getValues()[0];
+    headerOK   = (header[0] === 'photo_id' && header[1] === 'check_id');
+    Logger.log('Header ปัจจุบัน: ' + JSON.stringify(header));
+  }
+
+  if (!headerOK) {
+    if (lastRow === 0) {
+      sheet.appendRow(['photo_id','check_id','type','drive_url','uploaded_at']);
+    } else {
+      sheet.getRange(1,1,1,5).setValues([['photo_id','check_id','type','drive_url','uploaded_at']]);
+    }
+    Logger.log('ตั้ง header ใหม่เรียบร้อย');
+  } else {
+    Logger.log('Header ถูกต้อง — มีข้อมูล ' + (lastRow - 1) + ' รูป');
+  }
+}
+
+// ─── TEST UPLOAD (ทดสอบ upload ตรงจาก Apps Script) ───────────
+function testUpload() {
+  // PNG 1x1 pixel base64
+  var dummy = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  var res   = handleUploadPhoto({
+    base64:   dummy,
+    check_id: 'TEST_' + Date.now(),
+    type:     'problem',
+    filename: 'test_1x1.png',
+    mimeType: 'image/png',
+  });
+  Logger.log('testUpload: ' + res.getContent());
 }
