@@ -71,10 +71,13 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    // รับได้ทั้ง application/json และ text/plain (เพื่อหลีกเลี่ยง CORS preflight)
-    const raw  = e.postData ? e.postData.contents : '{}';
-    const body = JSON.parse(raw || '{}');
+    const raw    = e.postData ? e.postData.contents : '{}';
+    const sizeKB = Math.round((raw || '').length / 1024);
+    Logger.log('doPost received: ' + sizeKB + 'KB');
+
+    const body   = JSON.parse(raw || '{}');
     const action = body.action || '';
+    Logger.log('action=' + action + (action === 'uploadPhoto' ? ' check_id=' + body.check_id : ''));
 
     switch (action) {
       case 'saveZone':        return handleSaveZone(body);
@@ -580,4 +583,26 @@ function testUpload() {
     mimeType: 'image/png',
   });
   Logger.log('testUpload result: ' + res.getContent());
+}
+
+// ─── TEST DRIVE WRITE (บังคับขอ scope createFile) ────────────
+// รันฟังก์ชันนี้เพื่อให้ Google ขอ Permission สำหรับการเขียนไฟล์
+function testDriveWrite() {
+  Logger.log('=== testDriveWrite START ===');
+  try {
+    var folder   = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+    Logger.log('Folder: ' + folder.getName());
+
+    // ทดสอบสร้างไฟล์จริง
+    var blob     = Utilities.newBlob('test content', 'text/plain', 'permission_test.txt');
+    var file     = folder.createFile(blob);
+    Logger.log('createFile OK: ' + file.getId());
+
+    // ลบทดสอบออก
+    file.setTrashed(true);
+    Logger.log('Cleanup OK');
+    Logger.log('=== testDriveWrite PASS — Drive write permission confirmed ===');
+  } catch(e) {
+    Logger.log('ERROR: ' + e.toString());
+  }
 }
