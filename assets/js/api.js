@@ -3,7 +3,7 @@
 //  ใส่ URL ของ Web App ที่ Deploy แล้วในตัวแปร API_URL
 // ============================================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycby4P2Y2Yp9DU8U7jXkqXIO8U4lzpz2x2PDwh6pe7Qo7uM5zfv9QbRd83JYMjcJ5_8deWA/exec'; // ← เปลี่ยนตรงนี้
+const API_URL = 'https://script.google.com/macros/s/AKfycbxJD6ek-3F_b21LoulU0JFH6JoZY2MA-JVsFOrFf_whWqTqzDCW43vfHxC5vQUox0Dumw/exec'; // ← เปลี่ยนตรงนี้
 
 // ─── CORE FETCH WRAPPER ───────────────────────────────────────
 // สำคัญ: Apps Script Web App จะ redirect ไป URL ใหม่เสมอ
