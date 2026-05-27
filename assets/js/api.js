@@ -3,7 +3,7 @@
 // ============================================================
 
 // ★ เปลี่ยน URL ตรงนี้หลัง Deploy Apps Script แล้ว ★
-const API_URL = 'https://script.google.com/macros/s/AKfycbz6uJ2UjSXWx8JdrWQ67Hfhhl0e5_3TUUdH8tKFbelfxfxLCaEFAz046P7cZZ4wWgXhIA/exec';
+const API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
 
 // ─── ตรวจสอบ URL ก่อนใช้งาน ────────────────────────────────
 function checkApiUrl() {
@@ -61,15 +61,25 @@ async function apiPost(action, body = {}) {
   checkApiUrl();
   const payload = JSON.stringify({ action, ...body });
 
+  // แจ้งขนาด payload เพื่อ debug
+  const sizeKB = Math.round(payload.length / 1024);
+  if (sizeKB > 100) console.log('[apiPost] ' + action + ' payload size: ' + sizeKB + 'KB');
+
   let res;
   try {
+    // ใช้ AbortController เพื่อ timeout 60 วินาที (รูปใหญ่ใช้เวลานาน)
+    const ctrl    = new AbortController();
+    const timer   = setTimeout(() => ctrl.abort(), 60000);
     res = await fetch(API_URL, {
-      method: 'POST',
+      method:   'POST',
       redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: payload,
+      headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
+      body:     payload,
+      signal:   ctrl.signal,
     });
+    clearTimeout(timer);
   } catch (netErr) {
+    if (netErr.name === 'AbortError') throw new Error('หมดเวลา (timeout 60s) — รูปอาจใหญ่เกินไป');
     throw new Error('เชื่อมต่อ API ไม่ได้: ' + netErr.message);
   }
 
@@ -78,7 +88,7 @@ async function apiPost(action, body = {}) {
   try {
     json = JSON.parse(text);
   } catch {
-    throw new Error('Response ไม่ใช่ JSON: ' + text.slice(0, 150));
+    throw new Error('Response ไม่ใช่ JSON: ' + text.slice(0, 200));
   }
 
   if (json.status !== 200) throw new Error(json.error || 'API Error ' + json.status);
@@ -118,7 +128,8 @@ const DashboardAPI = {
 
 // ─── REPORT ──────────────────────────────────────────────────
 const ReportAPI = {
-  get: (month, year, zone_id) => apiGet('report', { month, year, zone_id }),
+  get:            (month, year, zone_id) => apiGet('report', { month, year, zone_id }),
+  getDailyAttend: (date, zone_id)        => apiGet('dailyAttendance', { date, zone_id }),
 };
 
 // ─── CACHE ───────────────────────────────────────────────────

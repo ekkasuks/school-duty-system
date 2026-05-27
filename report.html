@@ -3,51 +3,119 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>รายงานประจำเดือน</title>
+<title>รายงาน - ระบบตรวจเวร</title>
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="stylesheet" href="assets/css/print.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-.report-filter-bar {
+/* ── Tab Mode ── */
+.mode-tabs {
+  display: flex; gap: 0; margin-bottom: 1.5rem;
+  background: var(--bg2); border-radius: var(--radius);
+  padding: 0.35rem; border: 1px solid var(--border);
+}
+.mode-tab {
+  flex: 1; padding: 0.75rem 1rem; border-radius: 12px;
+  font-family: var(--font); font-size: 0.95rem; font-weight: 600;
+  border: none; cursor: pointer; transition: all 0.2s;
+  color: var(--text-lt); background: none; display: flex;
+  align-items: center; justify-content: center; gap: 0.5rem;
+}
+.mode-tab.active {
+  background: var(--card); color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+/* ── Filter Card ── */
+.filter-card {
   background: var(--card); border-radius: var(--radius);
   box-shadow: var(--shadow); border: 1px solid var(--border);
   padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
-  display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;
 }
-.report-filter-bar .form-group { margin: 0; flex: 1; min-width: 140px; }
-.report-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-
-/* ─── PRINT LAYOUT ─── */
-#print-report { display: none; }
-
-.print-header { text-align: center; margin-bottom: 1.2cm; }
-.print-school-name { font-size: 20pt; font-weight: bold; }
-.print-title        { font-size: 24pt; font-weight: bold; margin: 0.2cm 0; }
-.print-subtitle     { font-size: 18pt; font-weight: bold; }
-.print-meta         { font-size: 16pt; margin-top: 0.3cm; }
-
-.print-section-title {
-  font-size: 18pt; font-weight: bold;
-  background: #e0e0e0; padding: 0.2cm 0.4cm;
-  margin: 0.6cm 0 0.3cm; border-left: 5px solid #333;
+.filter-row {
+  display: flex; gap: 0.85rem; flex-wrap: wrap; align-items: flex-end;
 }
-.print-summary-box { border: 2px solid #000; padding: 0.4cm 0.6cm; margin: 0.5cm 0; }
-.print-summary-box h4 { font-size: 18pt; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 0.15cm; margin-bottom: 0.3cm; }
-.print-summary-row { display: flex; justify-content: space-between; padding: 0.1cm 0; border-bottom: 1px dotted #ccc; }
-.print-summary-row:last-child { border-bottom: none; }
-.print-summary-label { font-weight: bold; }
+.filter-row .form-group { margin: 0; flex: 1; min-width: 130px; }
 
-.print-signatures { margin-top: 1.5cm; }
-.print-signatures-title { text-align: center; font-weight: bold; margin-bottom: 0.8cm; }
-.signatures-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1cm; }
-.sig-block { text-align: center; }
-.sig-line { border-bottom: 1px solid #000; margin: 1.5cm 0.5cm 0.2cm; }
-.sig-role { font-weight: bold; }
-.print-footer-date { text-align: right; margin-top: 0.5cm; font-size: 14pt; color: #555; }
+/* ── Result Card ── */
+.result-card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+  margin-bottom: 1.25rem; overflow: hidden;
+}
+.result-header {
+  padding: 1rem 1.5rem; display: flex; align-items: center;
+  gap: 0.75rem; border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.result-header h3 { font-size: 1rem; font-weight: 700; flex: 1; }
+.result-body { padding: 0; }
+
+/* ── Print Layout ── */
+#print-area { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+  #print-area, #print-area * { visibility: visible; }
+  #print-area {
+    display: block !important;
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    font-family: 'THSarabunNew', 'Sarabun', sans-serif;
+    font-size: 16pt; color: #000; background: #fff;
+  }
+  @page { size: A4 portrait; margin: 1.5cm 1.5cm 2cm 2cm; }
+}
+
+/* ── Print Content Styles ── */
+.pr-doc { font-family: 'THSarabunNew','Sarabun',sans-serif; font-size: 16pt; color: #000; }
+.pr-header { text-align: center; margin-bottom: 0.5cm; border-bottom: 2px solid #000; padding-bottom: 0.3cm; }
+.pr-school { font-size: 18pt; font-weight: bold; }
+.pr-system { font-size: 14pt; color: #333; }
+.pr-title  { font-size: 22pt; font-weight: bold; margin: 0.15cm 0; }
+.pr-sub    { font-size: 16pt; }
+.pr-section-title {
+  font-size: 16pt; font-weight: bold;
+  background: #e0e0e0; padding: 0.15cm 0.3cm;
+  margin: 0.4cm 0 0.2cm; border-left: 4px solid #333;
+  page-break-after: avoid;
+}
+.pr-table { width: 100%; border-collapse: collapse; font-size: 15pt; margin-bottom: 0.3cm; }
+.pr-table th {
+  background: #333; color: #fff; font-weight: bold;
+  padding: 0.18cm 0.25cm; border: 1px solid #000; text-align: center;
+}
+.pr-table td { padding: 0.15cm 0.25cm; border: 1px solid #000; vertical-align: middle; }
+.pr-table tr:nth-child(even) td { background: #f5f5f5; }
+.pr-center { text-align: center; }
+.pr-present { text-align: center; font-weight: bold; color: #065F46; }
+.pr-absent  { text-align: center; font-weight: bold; color: #991B1B; }
+.pr-star    { text-align: center; letter-spacing: 1px; }
+.pr-summary-box {
+  border: 1.5px solid #000; padding: 0.3cm 0.5cm;
+  margin: 0.3cm 0; page-break-inside: avoid;
+}
+.pr-summary-row {
+  display: flex; justify-content: space-between;
+  padding: 0.08cm 0; border-bottom: 1px dotted #ccc; font-size: 15pt;
+}
+.pr-summary-row:last-child { border-bottom: none; }
+.pr-sig-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1cm; margin-top: 1cm;
+}
+.pr-sig-block { text-align: center; }
+.pr-sig-line  { border-bottom: 1px solid #000; margin: 1.2cm 0.5cm 0.2cm; }
+.pr-sig-role  { font-weight: bold; font-size: 15pt; }
+.pr-sig-name  { font-size: 14pt; color: #333; }
+.pr-footer    { text-align: right; font-size: 13pt; color: #555; margin-top: 0.5cm; }
+.pr-zone-block { page-break-inside: avoid; margin-bottom: 0.3cm; }
+.pr-no-break   { page-break-inside: avoid; }
 </style>
 </head>
 <body>
 
+<!-- NAVBAR -->
 <nav class="navbar">
   <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
   <div class="navbar-spacer"></div>
@@ -74,172 +142,93 @@
 <div class="container">
 
   <div class="page-header">
-    <div class="page-title"><i class="fas fa-file-alt"></i> รายงานประจำเดือน</div>
-    <div class="page-subtitle">สรุปผลการตรวจเวรความสะอาด</div>
+    <div class="page-title"><i class="fas fa-file-alt"></i> รายงาน & ส่งออก PDF</div>
+    <div class="page-subtitle">โรงเรียนบ้านใหม่ — ระบบตรวจเวรรับผิดชอบประจำวัน</div>
   </div>
 
-  <!-- FILTER BAR -->
-  <div class="report-filter-bar no-print">
-    <div class="form-group">
-      <label class="form-label">ชื่อโรงเรียน</label>
-      <input type="text" class="form-control" id="school-name" placeholder="โรงเรียน..." value="โรงเรียนตัวอย่าง">
-    </div>
-    <div class="form-group" style="min-width:120px; max-width:130px;">
-      <label class="form-label">เดือน</label>
-      <select class="form-control" id="sel-month" onchange="loadReport()"></select>
-    </div>
-    <div class="form-group" style="min-width:110px; max-width:120px;">
-      <label class="form-label">ปี</label>
-      <select class="form-control" id="sel-year" onchange="loadReport()"></select>
-    </div>
-    <div class="form-group" style="min-width:170px;">
-      <label class="form-label">พื้นที่เวร</label>
-      <select class="form-control" id="sel-zone" onchange="loadReport()">
-        <option value="all">ทุกพื้นที่</option>
-      </select>
-    </div>
-    <button class="btn btn-primary" onclick="loadReport()">
-      <i class="fas fa-search"></i> ดูรายงาน
+  <!-- MODE TABS -->
+  <div class="mode-tabs no-print">
+    <button class="mode-tab active" id="tab-daily" onclick="switchMode('daily')">
+      <i class="fas fa-calendar-day"></i> สรุปรายวัน (การมาเวร)
+    </button>
+    <button class="mode-tab" id="tab-monthly" onclick="switchMode('monthly')">
+      <i class="fas fa-calendar-alt"></i> สรุปรายเดือน (คะแนนความสะอาด)
     </button>
   </div>
 
-  <!-- SCREEN REPORT SUMMARY -->
-  <div id="screen-report" style="display:none;">
-    <div class="report-actions no-print">
-      <button class="btn btn-danger btn-lg" onclick="printReport()">
-        <i class="fas fa-file-pdf"></i> พิมพ์รายงาน PDF
-      </button>
-      <button class="btn btn-secondary" onclick="loadReport()">
-        <i class="fas fa-sync-alt"></i> รีเฟรช
-      </button>
-    </div>
-
-    <!-- Stats summary -->
-    <div class="stats-grid" id="rpt-stats" style="margin-bottom:1.25rem;"></div>
-
-    <!-- Daily table -->
-    <div class="card" style="margin-bottom:1.25rem;">
-      <div class="card-header primary"><i class="fas fa-calendar-alt"></i><h3>สรุปคะแนนรายวัน</h3></div>
-      <div class="card-body" style="padding:0;">
-        <div class="table-wrap">
-          <table id="daily-table">
-            <thead><tr><th>#</th><th>วันที่</th><th>คะแนนดาว</th><th>ผู้ตรวจ</th><th>หมายเหตุ</th></tr></thead>
-            <tbody id="daily-tbody"></tbody>
-          </table>
+  <!-- ════ MODE A: DAILY ════════════════════════════════════════ -->
+  <div id="panel-daily">
+    <div class="filter-card no-print">
+      <div class="filter-row">
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-calendar-day"></i> วันที่</label>
+          <input type="date" class="form-control" id="daily-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-map-marker-alt"></i> พื้นที่</label>
+          <select class="form-control" id="daily-zone">
+            <option value="all">ทุกพื้นที่</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-self:flex-end;">
+          <button class="btn btn-primary" onclick="loadDailyReport()">
+            <i class="fas fa-search"></i> ดูรายงาน
+          </button>
+          <button class="btn btn-danger" id="btn-print-daily" onclick="printDaily()" style="display:none;">
+            <i class="fas fa-file-pdf"></i> PDF
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Student table -->
-    <div class="card">
-      <div class="card-header pink"><i class="fas fa-user-graduate"></i><h3>สรุปการมาทำเวรนักเรียน</h3></div>
-      <div class="card-body" style="padding:0;">
-        <div class="table-wrap">
-          <table id="student-table">
-            <thead><tr><th>#</th><th>ชื่อ-สกุล</th><th>ชั้น/ห้อง</th><th>มา</th><th>ขาด</th><th>ร้อยละ</th></tr></thead>
-            <tbody id="student-tbody"></tbody>
-          </table>
-        </div>
-      </div>
+    <div id="daily-result" class="empty-state">
+      <i class="fas fa-calendar-day"></i>
+      <p>เลือกวันที่แล้วกด "ดูรายงาน"</p>
     </div>
   </div>
 
-  <div id="report-empty" class="empty-state">
-    <i class="fas fa-chart-bar"></i>
-    <p>เลือกเดือน/ปี และกด "ดูรายงาน" เพื่อแสดงข้อมูล</p>
+  <!-- ════ MODE B: MONTHLY ══════════════════════════════════════ -->
+  <div id="panel-monthly" style="display:none;">
+    <div class="filter-card no-print">
+      <div class="filter-row">
+        <div class="form-group" style="max-width:160px;">
+          <label class="form-label"><i class="fas fa-calendar-alt"></i> เดือน</label>
+          <select class="form-control" id="sel-month"></select>
+        </div>
+        <div class="form-group" style="max-width:120px;">
+          <label class="form-label">ปี</label>
+          <select class="form-control" id="sel-year"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-map-marker-alt"></i> พื้นที่</label>
+          <select class="form-control" id="monthly-zone">
+            <option value="all">ทุกพื้นที่</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-self:flex-end;">
+          <button class="btn btn-primary" onclick="loadMonthlyReport()">
+            <i class="fas fa-search"></i> ดูรายงาน
+          </button>
+          <button class="btn btn-danger" id="btn-print-monthly" onclick="printMonthly()" style="display:none;">
+            <i class="fas fa-file-pdf"></i> PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="monthly-result" class="empty-state">
+      <i class="fas fa-calendar-alt"></i>
+      <p>เลือกเดือน/ปี แล้วกด "ดูรายงาน"</p>
+    </div>
   </div>
 
 </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     PRINT LAYOUT  (hidden on screen, visible on print)
-═══════════════════════════════════════════════════════════ -->
-<div id="print-report">
-
-  <div class="print-header">
-    <div class="print-school-name" id="pr-school"></div>
-    <div class="print-title">รายงานผลการตรวจเวรความสะอาด</div>
-    <div class="print-subtitle" id="pr-period"></div>
-    <div class="print-meta" id="pr-zone-name"></div>
-  </div>
-
-  <!-- Section 1: Daily Score Table -->
-  <div class="print-section-title">1. ตารางสรุปคะแนนรายวัน</div>
-  <table id="pr-daily-table">
-    <thead>
-      <tr>
-        <th style="width:5%;">ที่</th>
-        <th style="width:20%;">วันที่</th>
-        <th style="width:20%; text-align:center;">คะแนนดาว</th>
-        <th style="width:25%;">ผู้ตรวจเวร</th>
-        <th>หมายเหตุ</th>
-      </tr>
-    </thead>
-    <tbody id="pr-daily-tbody"></tbody>
-  </table>
-
-  <!-- Section 2: Student Attendance Table -->
-  <div class="print-section-title page-break-before">2. ตารางสรุปการมาเวรนักเรียน</div>
-  <table id="pr-student-table">
-    <thead>
-      <tr>
-        <th style="width:5%;">ที่</th>
-        <th style="width:35%;">ชื่อ-สกุล</th>
-        <th style="width:15%; text-align:center;">ชั้น/ห้อง</th>
-        <th style="width:10%; text-align:center;">มา (ครั้ง)</th>
-        <th style="width:10%; text-align:center;">ขาด (ครั้ง)</th>
-        <th style="width:15%; text-align:center;">ร้อยละการมา</th>
-      </tr>
-    </thead>
-    <tbody id="pr-student-tbody"></tbody>
-  </table>
-
-  <!-- Section 3: Summary -->
-  <div class="print-section-title">3. สรุปผลท้ายรายงาน</div>
-  <div class="print-summary-box" id="pr-summary-box">
-    <h4>สรุปภาพรวม</h4>
-    <div class="print-summary-row">
-      <span class="print-summary-label">ดาวเฉลี่ยทั้งเดือน</span>
-      <span id="pr-avg-star">—</span>
-    </div>
-    <div class="print-summary-row">
-      <span class="print-summary-label">จำนวนครั้งที่ตรวจ</span>
-      <span id="pr-total-checks">—</span>
-    </div>
-    <div class="print-summary-row">
-      <span class="print-summary-label">นักเรียนมาเวรสูงสุด</span>
-      <span id="pr-top-student">—</span>
-    </div>
-  </div>
-
-  <!-- Section 4: Signatures -->
-  <div class="print-signatures no-break">
-    <div class="print-signatures-title">ลงนามรับรองรายงาน</div>
-    <div class="signatures-grid">
-      <div class="sig-block">
-        <div class="sig-line"></div>
-        <div class="sig-role">ผู้ตรวจเวร</div>
-        <div class="sig-name">(_________________)</div>
-        <div class="sig-date">วันที่ .............</div>
-      </div>
-      <div class="sig-block">
-        <div class="sig-line"></div>
-        <div class="sig-role">หัวหน้าฝ่ายอาคารสถานที่</div>
-        <div class="sig-name">(_________________)</div>
-        <div class="sig-date">วันที่ .............</div>
-      </div>
-      <div class="sig-block">
-        <div class="sig-line"></div>
-        <div class="sig-role">ผู้อำนวยการโรงเรียน</div>
-        <div class="sig-name">(_________________)</div>
-        <div class="sig-date">วันที่ .............</div>
-      </div>
-    </div>
-    <div class="print-footer-date" id="pr-print-date"></div>
-  </div>
-
-</div><!-- /#print-report -->
+<!-- ════════════════════════════════════════════════════════════
+     PRINT AREA — แสดงเฉพาะตอน print
+════════════════════════════════════════════════════════════ -->
+<div id="print-area"></div>
 
 <script src="assets/js/api.js"></script>
 <script src="assets/js/ui.js"></script>

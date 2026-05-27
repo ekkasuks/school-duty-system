@@ -281,14 +281,19 @@ function updateAttCount() {
 // ปัญหาเดิม: base64 ขนาดใหญ่ส่งผ่าน Apps Script เกิน payload limit
 // แก้: compress รูปก่อน (canvas) แล้วส่งทีละไฟล์พร้อม progress
 
-async function compressImage(file, maxWidth = 1200, quality = 0.8) {
-  return new Promise((resolve) => {
+// บีบอัดรูป + จำกัดขนาด base64 ให้อยู่ใน Apps Script limit (~700KB)
+async function compressImage(file, maxWidth = 800, quality = 0.65) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onerror = reject;
     reader.onload = (e) => {
       const img = new Image();
+      img.onerror = reject;
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let { width, height } = img;
+
+        // บีบให้เล็กลงก่อน
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width  = maxWidth;
@@ -296,7 +301,16 @@ async function compressImage(file, maxWidth = 1200, quality = 0.8) {
         canvas.width  = width;
         canvas.height = height;
         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        const base64 = canvas.toDataURL('image/jpeg', quality);
+
+        // ลด quality จนได้ขนาด base64 ไม่เกิน 500KB
+        let base64 = canvas.toDataURL('image/jpeg', quality);
+        let tries  = 0;
+        while (base64.length > 500000 && tries < 5) {
+          quality -= 0.1;
+          base64   = canvas.toDataURL('image/jpeg', Math.max(quality, 0.3));
+          tries++;
+        }
+        console.log(`[compress] ${file.name}: ${Math.round(base64.length/1024)}KB q=${quality.toFixed(1)}`);
         resolve({ base64, filename: file.name.replace(/\.[^.]+$/, '.jpg') });
       };
       img.src = e.target.result;
@@ -395,7 +409,11 @@ async function submitCheck() {
       date, zone_id: zoneId, inspector_name: inspectorName,
       star_rating: starRating, comment, attendance,
     });
-    const checkId = result.check_id;
+
+    // ── ตรวจสอบ check_id ก่อน upload ──
+    const checkId = result && result.check_id;
+    console.log('[check.js] save result:', JSON.stringify(result), '→ checkId:', checkId);
+    if (!checkId) throw new Error('ไม่ได้รับ check_id จาก server (ได้: ' + JSON.stringify(result) + ')');
     Loading.hide();
 
     // 2. Upload รูปทีละไฟล์พร้อม progress
@@ -404,6 +422,8 @@ async function submitCheck() {
     const problemFiles = dropProblem._getFiles ? dropProblem._getFiles() : [];
     const resultFiles  = dropResult._getFiles  ? dropResult._getFiles()  : [];
     const allFiles     = [...problemFiles, ...resultFiles];
+
+    console.log('[check.js] upload — problem:', problemFiles.length, 'result:', resultFiles.length, 'checkId:', checkId);
 
     if (allFiles.length) {
       const pRes = await uploadFilesWithProgress(problemFiles, checkId, 'problem');

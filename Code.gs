@@ -60,8 +60,9 @@ function doGet(e) {
       case 'students':     return handleGetStudents(e.parameter);
       case 'dashboard':    return handleGetDashboard(e.parameter);
       case 'report':       return handleGetReport(e.parameter);
-      case 'photos':       return handleGetPhotos(e.parameter);
-      default:             return errorResponse('Unknown action: ' + action, 404);
+      case 'photos':          return handleGetPhotos(e.parameter);
+      case 'dailyAttendance': return handleGetDailyAttendance(e.parameter);
+      default:                return errorResponse('Unknown action: ' + action, 404);
     }
   } catch (err) {
     Logger.log('doGet Error: ' + err.toString());
@@ -280,12 +281,25 @@ function handleUploadPhoto(body) {
     Logger.log('blob size: ' + blob.getBytes().length + ' bytes');
 
     // ── 4. Save to Drive ──
-    var folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
-    var file   = folder.createFile(blob);
+    var file;
+    try {
+      // ลองบันทึกใน Folder ที่กำหนดก่อน
+      if (CONFIG.DRIVE_FOLDER_ID && !CONFIG.DRIVE_FOLDER_ID.includes('YOUR_')) {
+        var folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+        file = folder.createFile(blob);
+        Logger.log('Saved to specified folder');
+      } else {
+        throw new Error('No folder ID configured');
+      }
+    } catch(folderErr) {
+      // Fallback: บันทึกใน MyDrive root
+      Logger.log('Folder failed (' + folderErr.message + '), falling back to MyDrive root');
+      file = DriveApp.createFile(blob);
+    }
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     var fileId   = file.getId();
     var driveUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
-    Logger.log('Drive OK: fileId=' + fileId);
+    Logger.log('Drive OK: fileId=' + fileId + ' name=' + file.getName());
 
     // ── 5. Save to Photos sheet (เขียนตรงๆ ไม่ผ่าน getSheet เพื่อหลีกเลี่ยง cache) ──
     var ss         = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -483,6 +497,79 @@ function handleGetReport(params) {
   });
 }
 
+
+// ─── DAILY ATTENDANCE HANDLER ────────────────────────────────
+// คืนค่า attendance ของทุกนักเรียนในวันที่กำหนด
+function handleGetDailyAttendance(params) {
+  var targetDate = params.date || formatDate(new Date());
+  var zoneId     = params.zone_id || 'all';
+
+  var checks   = sheetToObjects(getSheet(CONFIG.SHEETS.DAILY_CHECK));
+  var att      = sheetToObjects(getSheet(CONFIG.SHEETS.ATTENDANCE));
+  var students = sheetToObjects(getSheet(CONFIG.SHEETS.STUDENTS));
+  var zones    = sheetToObjects(getSheet(CONFIG.SHEETS.ZONES));
+
+  // กรอง checks ของวันนั้น
+  var dayChecks = checks.filter(function(c) {
+    var matchDate = formatDate(c.date) === targetDate;
+    var matchZone = zoneId === 'all' || c.zone_id === zoneId;
+    return matchDate && matchZone;
+  });
+
+  if (!dayChecks.length) {
+    return jsonResponse({ date: targetDate, zone_id: zoneId, checks: [], attendance: [] });
+  }
+
+  var checkIds = dayChecks.map(function(c) { return c.check_id; });
+
+  // กรอง attendance ของ check_id วันนั้น
+  var dayAtt = att.filter(function(a) { return checkIds.indexOf(a.check_id) !== -1; });
+
+  // สร้าง attendance map: student_id → {status, note, check_id}
+  var attMap = {};
+  dayAtt.forEach(function(a) { attMap[a.student_id] = a; });
+
+  // รวมข้อมูลนักเรียน + สถานะ
+  var result = students
+    .filter(function(s) {
+      var active = String(s.active).toUpperCase() === 'TRUE';
+      var inZone = zoneId === 'all' || s.zone_id === zoneId;
+      return active && inZone;
+    })
+    .map(function(s) {
+      var a = attMap[s.student_id] || {};
+      return {
+        student_id: s.student_id,
+        fullname:   s.fullname,
+        class:      s.class,
+        room:       s.room,
+        zone_id:    s.zone_id,
+        status:     a.status || 'no_data',
+        note:       a.note   || '',
+      };
+    });
+
+  // รวม check info
+  var checkInfo = dayChecks.map(function(c) {
+    var zone = zones.find(function(z) { return z.zone_id === c.zone_id; }) || {};
+    return {
+      check_id:       c.check_id,
+      zone_id:        c.zone_id,
+      zone_name:      zone.zone_name || c.zone_id,
+      inspector_name: c.inspector_name,
+      star_rating:    c.star_rating,
+      comment:        c.comment,
+    };
+  });
+
+  return jsonResponse({
+    date:       targetDate,
+    zone_id:    zoneId,
+    checks:     checkInfo,
+    attendance: result,
+  });
+}
+
 // ─── INIT SHEET (run once manually) ──────────────────────────
 function initSheets() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -585,24 +672,32 @@ function testUpload() {
   Logger.log('testUpload result: ' + res.getContent());
 }
 
-// ─── TEST DRIVE WRITE (บังคับขอ scope createFile) ────────────
-// รันฟังก์ชันนี้เพื่อให้ Google ขอ Permission สำหรับการเขียนไฟล์
+// ─── TEST DRIVE WRITE ────────────────────────────────────────
 function testDriveWrite() {
   Logger.log('=== testDriveWrite START ===');
+  var blob = Utilities.newBlob('test', 'text/plain', 'test_write.txt');
+
+  // ทดสอบ 1: เขียนใน Folder ที่กำหนด
+  Logger.log('--- Test 1: Specified Folder ---');
   try {
-    var folder   = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
-    Logger.log('Folder: ' + folder.getName());
-
-    // ทดสอบสร้างไฟล์จริง
-    var blob     = Utilities.newBlob('test content', 'text/plain', 'permission_test.txt');
-    var file     = folder.createFile(blob);
-    Logger.log('createFile OK: ' + file.getId());
-
-    // ลบทดสอบออก
-    file.setTrashed(true);
-    Logger.log('Cleanup OK');
-    Logger.log('=== testDriveWrite PASS — Drive write permission confirmed ===');
+    var folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+    Logger.log('Folder name: ' + folder.getName());
+    var f1 = folder.createFile(blob);
+    Logger.log('✅ Folder createFile OK: ' + f1.getId());
+    f1.setTrashed(true);
   } catch(e) {
-    Logger.log('ERROR: ' + e.toString());
+    Logger.log('❌ Folder createFile FAIL: ' + e.toString());
   }
+
+  // ทดสอบ 2: เขียนใน MyDrive root (fallback)
+  Logger.log('--- Test 2: MyDrive Root ---');
+  try {
+    var f2 = DriveApp.createFile(blob);
+    Logger.log('✅ MyDrive createFile OK: ' + f2.getId());
+    f2.setTrashed(true);
+  } catch(e) {
+    Logger.log('❌ MyDrive createFile FAIL: ' + e.toString());
+  }
+
+  Logger.log('=== testDriveWrite END ===');
 }
