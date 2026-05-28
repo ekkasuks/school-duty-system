@@ -220,21 +220,25 @@ function buildAttRow(s) {
   div.className  = `att-item ${att.status}`;
   div.id         = `att-row-${s.student_id}`;
   div.innerHTML  = `
-    <div class="att-avatar">${initials}</div>
-    <div style="flex:1; min-width:0;">
-      <div class="att-name" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.fullname}</div>
-      <div class="att-class">ป.${s.class}/${s.room}</div>
+    <div class="att-row-top">
+      <div class="att-avatar">${initials}</div>
+      <div class="att-info">
+        <div class="att-name">${s.fullname}</div>
+        <div class="att-class">ป.${s.class}/${s.room}</div>
+      </div>
+      <div class="att-actions">
+        <button class="att-btn present-btn ${att.status==='present'?'active-present':''}"
+          onclick="setAtt('${s.student_id}','present')" title="มาทำเวร">✅</button>
+        <button class="att-btn absent-btn ${att.status==='absent'?'active-absent':''}"
+          onclick="setAtt('${s.student_id}','absent')" title="ไม่มาทำเวร">❌</button>
+      </div>
     </div>
-    <div class="att-actions">
-      <button class="att-btn present-btn ${att.status==='present'?'active-present':''}"
-        onclick="setAtt('${s.student_id}','present')" title="มาทำเวร">✅</button>
-      <button class="att-btn absent-btn ${att.status==='absent'?'active-absent':''}"
-        onclick="setAtt('${s.student_id}','absent')" title="ไม่มาทำเวร">❌</button>
-    </div>
-    <input class="att-note" type="text" placeholder="หมายเหตุ"
-      value="${att.note || ''}"
-      onchange="setNote('${s.student_id}', this.value)"
-      title="หมายเหตุ เช่น ลาป่วย">`;
+    <div class="att-row-bottom">
+      <input class="att-note" type="text"
+        placeholder="หมายเหตุ เช่น ลาป่วย, ติดกิจกรรม"
+        value="${att.note || ''}"
+        onchange="setNote('${s.student_id}', this.value)">
+    </div>`;
   return div;
 }
 
