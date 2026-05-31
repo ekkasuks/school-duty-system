@@ -341,7 +341,9 @@ function handleGetPhotos(params) {
 
 // ─── DASHBOARD HANDLER ───────────────────────────────────────
 function handleGetDashboard(params) {
-  const targetDate = params.date || formatDate(new Date());
+  // ใช้ Bangkok timezone เป็น default date
+  const todayBkk    = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+  const targetDate  = params.date || todayBkk;
 
   const checks   = sheetToObjects(getSheet(CONFIG.SHEETS.DAILY_CHECK));
   const att      = sheetToObjects(getSheet(CONFIG.SHEETS.ATTENDANCE));
@@ -393,11 +395,13 @@ function handleGetDashboard(params) {
 }
 
 function buildTrend(checks, days) {
-  const result = [];
+  const result  = [];
+  // ใช้เวลาปัจจุบันใน Bangkok timezone เพื่อหลีกเลี่ยง UTC shift
+  const nowBkk  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date();
+    const d = new Date(nowBkk);
     d.setDate(d.getDate() - i);
-    const dateStr   = formatDate(d);
+    const dateStr   = Utilities.formatDate(d, 'Asia/Bangkok', 'yyyy-MM-dd');
     const dayChecks = checks.filter(c => formatDate(c.date) === dateStr);
     const avg = dayChecks.length > 0
       ? dayChecks.reduce((s,c) => s + Number(c.star_rating), 0) / dayChecks.length
