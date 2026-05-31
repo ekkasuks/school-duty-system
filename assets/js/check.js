@@ -214,14 +214,12 @@ function rebuildStudentSections() {
 }
 
 function buildAttRow(s) {
-  const att      = attendanceMap[s.student_id];
-  const initials = s.fullname.trim().split(/\s+/).map(w => w[0]).join('').slice(0,2).toUpperCase();
-  const div      = document.createElement('div');
-  div.className  = `att-item ${att.status}`;
-  div.id         = `att-row-${s.student_id}`;
-  div.innerHTML  = `
+  const att = attendanceMap[s.student_id];
+  const div = document.createElement('div');
+  div.className = `att-item ${att.status}`;
+  div.id        = `att-row-${s.student_id}`;
+  div.innerHTML = `
     <div class="att-row-top">
-      <div class="att-avatar">${initials}</div>
       <div class="att-info">
         <div class="att-name">${s.fullname}</div>
         <div class="att-class">ป.${s.class}/${s.room}</div>
