@@ -161,15 +161,38 @@ function initPhotoUpload(dropZoneId, inputId, previewId, maxFiles = 5) {
 }
 
 // ─── FORMAT HELPERS ───────────────────────────────────────────
+
+// คืนวันที่ปัจจุบันในไทย (UTC+7) รูปแบบ YYYY-MM-DD
+// แก้ bug: toISOString() คืน UTC ทำให้วันคลาดเคลื่อน
+function todayISO() {
+  const now    = new Date();
+  const offset = 7 * 60; // UTC+7 นาที
+  const local  = new Date(now.getTime() + (offset - now.getTimezoneOffset()) * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+// แปลง "YYYY-MM-DD" → วันที่ไทย โดยไม่ผ่าน Date constructor (หลีกเลี่ยง UTC shift)
 function formatThaiDate(dateStr) {
   if (!dateStr) return '-';
-  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  const d = new Date(dateStr);
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                  'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  // แยก string ตรงๆ ไม่ใช้ new Date() เพื่อหลีกเลี่ยง timezone shift
+  const parts = String(dateStr).slice(0, 10).split('-');
+  if (parts.length < 3) {
+    // fallback สำหรับรูปแบบอื่น
+    const d = new Date(dateStr);
+    const t = new Date(d.getTime() + 7 * 60 * 60000);
+    return `${t.getUTCDate()} ${months[t.getUTCMonth()]} ${t.getUTCFullYear() + 543}`;
+  }
+  const y = parseInt(parts[0]);
+  const m = parseInt(parts[1]);
+  const d = parseInt(parts[2]);
+  return `${d} ${months[m - 1]} ${y + 543}`;
 }
 
 function formatThaiMonth(month, year) {
-  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
   return `${months[month - 1]} ${year + 543}`;
 }
 
@@ -178,13 +201,9 @@ function renderStars(val) {
   return [1,2,3,4,5].map(i => `<span style="color:${i<=val?'#FFC107':'#ddd'}">★</span>`).join('');
 }
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function getCurrentThaiMonth() {
-  const d = new Date();
-  return { month: d.getMonth() + 1, year: d.getFullYear() };
+  const parts = todayISO().split('-');
+  return { month: parseInt(parts[1]), year: parseInt(parts[0]) };
 }
 
 // ─── CONFIRM DIALOG ───────────────────────────────────────────
