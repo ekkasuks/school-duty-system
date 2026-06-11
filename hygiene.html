@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตรวจสุขลักษณะนักเรียน</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ── Hygiene Items Header ── */
+.hygiene-legend {
+  display: grid;
+  grid-template-columns: 1fr repeat(5, 52px);
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--border);
+  position: sticky; top: var(--nav-h); z-index: 10;
+}
+.legend-label {
+  font-size: 0.7rem; font-weight: 700; text-align: center;
+  color: var(--text-lt); line-height: 1.3;
+}
+.legend-icon { font-size: 1.2rem; text-align: center; }
+
+/* ── Hygiene Row ── */
+.hygiene-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(5, 52px);
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.hygiene-row:last-child { border-bottom: none; }
+.hygiene-row:hover { background: #fafafe; }
+.hygiene-row.all-pass { background: #f0fff5; }
+.hygiene-row.has-fail  { background: #fff8f8; }
+
+.stu-info .stu-name  { font-weight: 700; font-size: 0.93rem; }
+.stu-info .stu-class { font-size: 0.76rem; color: var(--text-lt); }
+
+/* ── Toggle Checkbox ── */
+.hyg-check {
+  width: 44px; height: 44px; border-radius: 10px;
+  border: 2px solid var(--border); background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1.15rem; transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; margin: 0 auto;
+}
+.hyg-check.pass  { background: #D1FAE5; border-color: #6EE7B7; }
+.hyg-check.fail  { background: #FEE2E2; border-color: #FCA5A5; }
+.hyg-check:active { transform: scale(0.9); }
+
+/* ── Note row (ซ่อนถ้าไม่ได้กด) ── */
+.note-row {
+  grid-column: 1 / -1;
+  padding: 0.25rem 1rem 0.6rem;
+  display: none;
+}
+.note-row.show { display: block; }
+.note-input {
+  width: 100%; padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-family: var(--font); font-size: 0.82rem; background: var(--bg);
+}
+
+/* ── Summary bar ── */
+.summary-bar {
+  display: flex; gap: 1rem; flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--bg2); border-top: 1px solid var(--border);
+}
+.sum-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; }
+.sum-dot  { width: 10px; height: 10px; border-radius: 50%; }
+
+/* ── Zone tabs ── */
+.zone-tabs {
+  display: flex; gap: 0.4rem; flex-wrap: wrap;
+  padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.zone-tab-btn {
+  padding: 0.4rem 0.9rem; border-radius: 99px; font-size: 0.85rem;
+  font-weight: 600; border: 1.5px solid var(--border);
+  background: var(--bg); cursor: pointer; font-family: var(--font);
+  color: var(--text-lt); transition: all 0.15s;
+}
+.zone-tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.zone-tab-btn .tab-count {
+  background: rgba(255,255,255,0.3); border-radius: 99px;
+  padding: 0 0.4rem; font-size: 0.75rem; margin-left: 0.2rem;
+}
+
+/* ── Print ── */
+@media print {
+  .no-print, nav, .navbar, .mobile-menu { display: none !important; }
+  .hygiene-legend { position: static; top: auto; }
+  .hyg-check { border: 1px solid #999; font-size: 1rem; width: 28px; height: 28px; }
+  .hygiene-row { padding: 0.3rem 0.5rem; }
+  .stu-name { font-size: 14pt; }
+  .stu-class { font-size: 12pt; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-links">
+    <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+    <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
+    <a href="hygiene.html"><i class="fas fa-heartbeat"></i> สุขลักษณะ</a>
+    <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
+    <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน</a>
+  </div>
+  <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+  <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรความสะอาด</a>
+  <a href="hygiene.html"><i class="fas fa-heartbeat"></i> ตรวจสุขลักษณะ</a>
+  <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
+</div>
+
+<div class="page-wrapper">
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-title"><i class="fas fa-heartbeat" style="color:#EC4899;"></i> ตรวจสุขลักษณะนักเรียน</div>
+    <div class="page-subtitle">โรงเรียนบ้านใหม่ — บันทึกผลการตรวจ ผม | ช้อน | แก้วน้ำ | แปรงสีฟัน | ร่างกาย</div>
+  </div>
+
+  <!-- FILTER -->
+  <div class="check-panel no-print">
+    <div class="panel-header blue">
+      <i class="fas fa-sliders-h" style="color:var(--primary);"></i>
+      <h3>ข้อมูลการตรวจ</h3>
+    </div>
+    <div class="panel-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">วันที่ตรวจ <span class="req">*</span></label>
+          <input type="date" class="form-control" id="hygiene-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ชื่อผู้ตรวจ <span class="req">*</span></label>
+          <input type="text" class="form-control" id="hygiene-inspector" placeholder="ชื่อ-สกุล ครูผู้ตรวจ">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="loadStudents()">
+        <i class="fas fa-users"></i> โหลดรายชื่อนักเรียน
+      </button>
+    </div>
+  </div>
+
+  <!-- ZONE TABS -->
+  <div id="zone-tabs-wrap" style="display:none;" class="card" style="overflow:hidden;">
+    <div class="zone-tabs" id="zone-tabs"></div>
+
+    <!-- LEGEND -->
+    <div class="hygiene-legend">
+      <div style="font-size:0.78rem; font-weight:700; color:var(--text-lt);">ชื่อนักเรียน</div>
+      <div class="legend-label">🪮<br>ผม</div>
+      <div class="legend-label">🥄<br>ช้อน</div>
+      <div class="legend-label">🥤<br>แก้วน้ำ</div>
+      <div class="legend-label">🪥<br>แปรงสีฟัน</div>
+      <div class="legend-label">🧼<br>ร่างกาย</div>
+    </div>
+
+    <!-- STUDENT LIST -->
+    <div id="hygiene-list"></div>
+
+    <!-- SUMMARY BAR -->
+    <div class="summary-bar" id="summary-bar">
+      <div class="sum-item"><div class="sum-dot" style="background:var(--accent);"></div><span id="sum-pass">ผ่านทั้งหมด: 0</span></div>
+      <div class="sum-item"><div class="sum-dot" style="background:var(--danger);"></div><span id="sum-fail">ไม่ผ่านบางรายการ: 0</span></div>
+      <div class="sum-item"><span id="sum-total" style="color:var(--text-lt);"></span></div>
+    </div>
+  </div>
+
+  <!-- ACTION BUTTONS -->
+  <div id="action-btns" style="display:none; margin-top:1rem;" class="no-print">
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+      <button class="btn btn-primary btn-lg" style="flex:1;" onclick="saveHygiene()">
+        <i class="fas fa-save"></i> บันทึกผลการตรวจ
+      </button>
+      <button class="btn btn-secondary" onclick="markAllPass()">
+        <i class="fas fa-check-double"></i> ผ่านทั้งหมด
+      </button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/hygiene.js"></script>
+</body>
+</html>

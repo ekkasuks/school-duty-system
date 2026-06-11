@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายงานสุขลักษณะ</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+.pass-cell { text-align:center; color:#065F46; font-weight:700; font-size:1rem; }
+.fail-cell { text-align:center; color:#991B1B; font-weight:700; font-size:1rem; }
+.score-bar-wrap { display:flex; align-items:center; gap:0.5rem; }
+.score-num { font-weight:700; min-width:1.5rem; text-align:right; }
+
+/* Print */
+#print-area { display:none; }
+@media print {
+  body * { visibility:hidden; }
+  #print-area, #print-area * { visibility:visible; }
+  #print-area {
+    display:block !important;
+    position:fixed; top:0; left:0; width:100%;
+    font-family:'THSarabunNew','Sarabun',sans-serif;
+    font-size:16pt; color:#000;
+  }
+  @page { size:A4 portrait; margin:1.5cm 1.5cm 2cm 2cm; }
+}
+.pr-doc { font-family:'THSarabunNew','Sarabun',sans-serif; font-size:16pt; color:#000; }
+.pr-header { text-align:center; border-bottom:2px solid #000; padding-bottom:0.3cm; margin-bottom:0.5cm; }
+.pr-school { font-size:18pt; font-weight:bold; }
+.pr-system { font-size:13pt; color:#333; }
+.pr-title  { font-size:22pt; font-weight:bold; margin:0.15cm 0; }
+.pr-sub    { font-size:16pt; }
+.pr-table  { width:100%; border-collapse:collapse; font-size:14pt; margin-bottom:0.4cm; }
+.pr-table th { background:#333; color:#fff; padding:0.15cm 0.2cm; border:1px solid #000; text-align:center; }
+.pr-table td { padding:0.12cm 0.2cm; border:1px solid #000; }
+.pr-table tr:nth-child(even) td { background:#f5f5f5; }
+.pr-center { text-align:center; }
+.pr-pass   { text-align:center; font-size:13pt; }
+.pr-sig-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1cm; margin-top:1cm; }
+.pr-sig-block { text-align:center; }
+.pr-sig-line  { border-bottom:1px solid #000; margin:1.2cm 0.5cm 0.2cm; }
+.pr-sig-role  { font-weight:bold; font-size:14pt; }
+.pr-sig-name  { font-size:13pt; color:#333; }
+.pr-footer    { text-align:right; font-size:12pt; color:#555; margin-top:0.5cm; }
+.pr-stat-row  { display:flex; justify-content:space-between; padding:0.08cm 0; border-bottom:1px dotted #ccc; }
+.pr-stat-row:last-child { border-bottom:none; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-links">
+    <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+    <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
+    <a href="hygiene.html"><i class="fas fa-heartbeat"></i> สุขลักษณะ</a>
+    <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
+    <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน</a>
+  </div>
+  <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+  <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรความสะอาด</a>
+  <a href="hygiene.html"><i class="fas fa-heartbeat"></i> ตรวจสุขลักษณะ</a>
+  <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
+</div>
+
+<div class="page-wrapper">
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-title"><i class="fas fa-file-medical" style="color:#EC4899;"></i> รายงานสุขลักษณะประจำเดือน</div>
+    <div class="page-subtitle">โรงเรียนบ้านใหม่</div>
+  </div>
+
+  <!-- FILTER -->
+  <div class="filter-card no-print" style="background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:1.25rem 1.5rem;margin-bottom:1.25rem;">
+    <div style="display:flex; gap:0.85rem; flex-wrap:wrap; align-items:flex-end;">
+      <div class="form-group" style="margin:0; max-width:160px;">
+        <label class="form-label">เดือน</label>
+        <select class="form-control" id="sel-month"></select>
+      </div>
+      <div class="form-group" style="margin:0; max-width:120px;">
+        <label class="form-label">ปี</label>
+        <select class="form-control" id="sel-year"></select>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-self:flex-end;">
+        <button class="btn btn-primary" onclick="loadReport()">
+          <i class="fas fa-search"></i> ดูรายงาน
+        </button>
+        <button class="btn btn-danger" id="btn-pdf" onclick="printReport()" style="display:none;">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid" id="rpt-stats" style="margin-bottom:1.25rem; display:none;"></div>
+
+  <!-- TABLE -->
+  <div class="card" id="rpt-card" style="display:none;">
+    <div class="card-header" style="background:linear-gradient(135deg,#FCE7F3,#FBCFE8);">
+      <i class="fas fa-heartbeat" style="color:#EC4899;"></i>
+      <h3 id="rpt-card-title">ผลการตรวจสุขลักษณะ</h3>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ชื่อ-สกุล</th>
+              <th>ชั้น/ห้อง</th>
+              <th style="text-align:center;">🪮 ผม</th>
+              <th style="text-align:center;">🥄 ช้อน</th>
+              <th style="text-align:center;">🥤 แก้วน้ำ</th>
+              <th style="text-align:center;">🪥 แปรงสีฟัน</th>
+              <th style="text-align:center;">🧼 ร่างกาย</th>
+              <th style="text-align:center;">คะแนน</th>
+              <th>หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody id="rpt-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="rpt-empty" class="empty-state">
+    <i class="fas fa-file-medical"></i>
+    <p>เลือกเดือน/ปี แล้วกด "ดูรายงาน"</p>
+  </div>
+
+</div>
+</div>
+
+<!-- PRINT AREA -->
+<div id="print-area"></div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+const THAI_MONTHS_FULL = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+let reportData = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const now  = new Date();
+  const selM = document.getElementById('sel-month');
+  const selY = document.getElementById('sel-year');
+  THAI_MONTHS_FULL.slice(1).forEach((name, i) => {
+    const opt = document.createElement('option');
+    opt.value = i+1; opt.textContent = name;
+    if (i+1 === now.getMonth()+1) opt.selected = true;
+    selM.appendChild(opt);
+  });
+  for (let y = now.getFullYear(); y >= now.getFullYear()-3; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y+543;
+    if (y === now.getFullYear()) opt.selected = true;
+    selY.appendChild(opt);
+  }
+});
+
+async function loadReport() {
+  const month = parseInt(document.getElementById('sel-month').value);
+  const year  = parseInt(document.getElementById('sel-year').value);
+  Loading.show('กำลังโหลดรายงาน...');
+  try {
+    reportData = await HygieneAPI.getReport(month, year);
+    renderReport(reportData);
+    document.getElementById('btn-pdf').style.display = '';
+  } catch(e) {
+    Toast.error('โหลดไม่สำเร็จ: ' + e.message);
+  } finally { Loading.hide(); }
+}
+
+function pc(val) { return val ? '<span class="pass-cell">✅</span>' : '<span class="fail-cell">❌</span>'; }
+
+function renderReport(d) {
+  document.getElementById('rpt-empty').style.display = 'none';
+  document.getElementById('rpt-stats').style.display = '';
+  document.getElementById('rpt-card').style.display  = '';
+  const period = `${THAI_MONTHS_FULL[d.month]} ${d.year+543}`;
+  document.getElementById('rpt-card-title').textContent = `ผลการตรวจสุขลักษณะ — ${period}`;
+
+  // Stats
+  document.getElementById('rpt-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-users"></i></div>
+      <div><div class="stat-value">${d.total_students}</div><div class="stat-label">นักเรียนทั้งหมด</div></div></div>
+    <div class="stat-card"><div class="stat-icon green"><i class="fas fa-clipboard-check"></i></div>
+      <div><div class="stat-value">${d.checked_students}</div><div class="stat-label">ได้รับการตรวจ</div></div></div>
+    <div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-star"></i></div>
+      <div><div class="stat-value">${d.pass_all}</div><div class="stat-label">ผ่านทุกรายการ</div></div></div>
+    <div class="stat-card"><div class="stat-icon pink"><i class="fas fa-calendar-alt"></i></div>
+      <div><div class="stat-value">${d.check_dates.length}</div><div class="stat-label">วันที่มีการตรวจ</div></div></div>`;
+
+  // Table
+  document.getElementById('rpt-tbody').innerHTML = d.student_summary.map((r, i) => `
+    <tr style="${!r.checked ? 'opacity:0.45;' : ''}">
+      <td>${i+1}</td>
+      <td style="font-weight:700;">${r.fullname}${!r.checked ? ' <span style="font-size:0.75rem;color:var(--text-lt);">(ยังไม่ตรวจ)</span>' : ''}</td>
+      <td>ป.${r.class}/${r.room}</td>
+      <td>${r.checked ? pc(r.haircut)    : '—'}</td>
+      <td>${r.checked ? pc(r.spoon)      : '—'}</td>
+      <td>${r.checked ? pc(r.glass)      : '—'}</td>
+      <td>${r.checked ? pc(r.toothbrush) : '—'}</td>
+      <td>${r.checked ? pc(r.body_clean) : '—'}</td>
+      <td style="text-align:center;">
+        ${r.checked ? `<div class="score-bar-wrap">
+          <div class="progress-bar" style="flex:1;">
+            <div class="progress-fill ${r.score===5?'green':r.score>=3?'':''}" style="width:${r.score/5*100}%"></div>
+          </div>
+          <span class="score-num">${r.score}/5</span>
+        </div>` : '—'}
+      </td>
+      <td style="font-size:0.82rem; color:var(--text-lt);">${r.note || ''}</td>
+    </tr>`).join('');
+}
+
+function printReport() {
+  if (!reportData) return;
+  const d      = reportData;
+  const period = `${THAI_MONTHS_FULL[d.month]} ${d.year+543}`;
+  const fs     = d.fail_stats;
+
+  const html = `<div class="pr-doc">
+    <div class="pr-header">
+      <div class="pr-school">โรงเรียนบ้านใหม่</div>
+      <div class="pr-system">ระบบตรวจเวรรับผิดชอบประจำวัน</div>
+      <div class="pr-title">รายงานผลการตรวจสุขลักษณะนักเรียน</div>
+      <div class="pr-sub">ประจำเดือน ${period}</div>
+    </div>
+
+    <div style="border:1.5px solid #000; padding:0.3cm 0.5cm; margin-bottom:0.4cm;">
+      <div style="font-size:16pt; font-weight:bold; margin-bottom:0.2cm;">สรุปภาพรวม</div>
+      <div class="pr-stat-row"><span style="font-weight:bold;">นักเรียนทั้งหมด</span><span>${d.total_students} คน</span></div>
+      <div class="pr-stat-row"><span style="font-weight:bold;">ได้รับการตรวจ</span><span>${d.checked_students} คน</span></div>
+      <div class="pr-stat-row"><span style="font-weight:bold;">ผ่านทุกรายการ (5/5)</span><span>${d.pass_all} คน</span></div>
+      <div class="pr-stat-row"><span style="font-weight:bold;">วันที่ตรวจ</span><span>${d.check_dates.map(formatThaiDate).join(', ') || '—'}</span></div>
+      <div style="margin-top:0.2cm; font-size:14pt; color:#555;">
+        รายการไม่ผ่าน: ผม ${fs.haircut} | ช้อน ${fs.spoon} | แก้วน้ำ ${fs.glass} | แปรงสีฟัน ${fs.toothbrush} | ร่างกาย ${fs.body_clean}
+      </div>
+    </div>
+
+    <table class="pr-table">
+      <thead><tr>
+        <th style="width:5%;">ที่</th>
+        <th style="width:30%;">ชื่อ-สกุล</th>
+        <th style="width:10%;">ชั้น/ห้อง</th>
+        <th style="width:9%;">🪮 ผม</th>
+        <th style="width:9%;">🥄 ช้อน</th>
+        <th style="width:9%;">🥤 แก้ว</th>
+        <th style="width:9%;">🪥 แปรง</th>
+        <th style="width:9%;">🧼 ร่างกาย</th>
+        <th style="width:10%;">คะแนน</th>
+      </tr></thead>
+      <tbody>
+        ${d.student_summary.map((r,i) => `<tr>
+          <td class="pr-center">${i+1}</td>
+          <td>${r.fullname}${!r.checked?' (ยังไม่ตรวจ)':''}</td>
+          <td class="pr-center">ป.${r.class}/${r.room}</td>
+          <td class="pr-pass">${!r.checked?'—':r.haircut?'✅':'❌'}</td>
+          <td class="pr-pass">${!r.checked?'—':r.spoon?'✅':'❌'}</td>
+          <td class="pr-pass">${!r.checked?'—':r.glass?'✅':'❌'}</td>
+          <td class="pr-pass">${!r.checked?'—':r.toothbrush?'✅':'❌'}</td>
+          <td class="pr-pass">${!r.checked?'—':r.body_clean?'✅':'❌'}</td>
+          <td class="pr-center" style="font-weight:bold;">${r.checked?r.score+'/5':'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+
+    <div class="pr-sig-grid">
+      <div class="pr-sig-block">
+        <div class="pr-sig-line"></div>
+        <div class="pr-sig-role">ผู้ตรวจ</div>
+        <div class="pr-sig-name">(________________)</div>
+        <div class="pr-sig-name">วันที่ .............</div>
+      </div>
+      <div class="pr-sig-block">
+        <div class="pr-sig-line"></div>
+        <div class="pr-sig-role">หัวหน้าฝ่ายปกครอง</div>
+        <div class="pr-sig-name">(________________)</div>
+        <div class="pr-sig-name">วันที่ .............</div>
+      </div>
+      <div class="pr-sig-block">
+        <div class="pr-sig-line"></div>
+        <div class="pr-sig-role">ผู้อำนวยการโรงเรียน</div>
+        <div class="pr-sig-name">(________________)</div>
+        <div class="pr-sig-name">วันที่ .............</div>
+      </div>
+    </div>
+    <div class="pr-footer">พิมพ์เมื่อ ${formatThaiDate(todayISO())}</div>
+  </div>`;
+
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { document.getElementById('print-area').innerHTML = ''; }, 800);
+  }, 300);
+}
+</script>
+</body>
+</html>

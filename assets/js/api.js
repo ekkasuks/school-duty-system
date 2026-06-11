@@ -3,7 +3,7 @@
 // ============================================================
 
 // ★ เปลี่ยน URL ตรงนี้หลัง Deploy Apps Script แล้ว ★
-const API_URL = 'https://script.google.com/macros/s/AKfycbx0m4HjOTZUEWQ69kdRYMfhRe405CgwipK_PlRNyNovXi-IMwKI9VoExDjCwTbNsjx7Lw/exec';
+const API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
 
 // ─── ตรวจสอบ URL ก่อนใช้งาน ────────────────────────────────
 function checkApiUrl() {
@@ -130,6 +130,14 @@ const DashboardAPI = {
 const ReportAPI = {
   get:            (month, year, zone_id) => apiGet('report', { month, year, zone_id }),
   getDailyAttend: (date, zone_id)        => apiGet('dailyAttendance', { date, zone_id }),
+};
+
+// ─── HYGIENE ─────────────────────────────────────────────────
+const HygieneAPI = {
+  save:      (data)              => apiPost('saveHygieneCheck', data),
+  delete:    (hygiene_id)        => apiPost('deleteHygieneCheck', { hygiene_id }),
+  getByDate: (date)              => apiGet('hygieneCheck', { date }),
+  getReport: (month, year)       => apiGet('hygieneReport', { month, year }),
 };
 
 // ─── CACHE ───────────────────────────────────────────────────

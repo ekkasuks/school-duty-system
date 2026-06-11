@@ -18,11 +18,14 @@ const CONFIG = {
   SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID_HERE',   // ← เปลี่ยนตรงนี้
   DRIVE_FOLDER_ID: 'YOUR_DRIVE_FOLDER_ID_HERE', // ← เปลี่ยนตรงนี้
   SHEETS: {
-    ZONES:       'Zones',
-    STUDENTS:    'Students',
-    DAILY_CHECK: 'DailyCheck',
-    ATTENDANCE:  'Attendance',
-    PHOTOS:      'Photos',
+    ZONES:          'Zones',
+    STUDENTS:       'Students',
+    DAILY_CHECK:    'DailyCheck',
+    ATTENDANCE:     'Attendance',
+    PHOTOS:         'Photos',
+    BEHAVIOR_SCORE: 'BehaviorScore',
+    SCORE_CATEGORY: 'ScoreCategory',
+    HYGIENE_CHECK:  'HygieneCheck',
   },
 };
 
@@ -61,8 +64,14 @@ function doGet(e) {
       case 'dashboard':    return handleGetDashboard(e.parameter);
       case 'report':       return handleGetReport(e.parameter);
       case 'photos':          return handleGetPhotos(e.parameter);
-      case 'dailyAttendance': return handleGetDailyAttendance(e.parameter);
-      default:                return errorResponse('Unknown action: ' + action, 404);
+      case 'dailyAttendance':    return handleGetDailyAttendance(e.parameter);
+      case 'behaviorCategories': return handleGetCategories();
+      case 'behaviorScores':     return handleGetBehaviorScores(e.parameter);
+      case 'behaviorDashboard':  return handleGetBehaviorDashboard(e.parameter);
+      case 'behaviorReport':     return handleGetBehaviorReport(e.parameter);
+      case 'hygieneCheck':       return handleGetHygieneChecks(e.parameter);
+      case 'hygieneReport':      return handleGetHygieneReport(e.parameter);
+      default:                   return errorResponse('Unknown action: ' + action, 404);
     }
   } catch (err) {
     Logger.log('doGet Error: ' + err.toString());
@@ -86,8 +95,14 @@ function doPost(e) {
       case 'saveStudent':     return handleSaveStudent(body);
       case 'deleteStudent':   return handleDeleteStudent(body);
       case 'dailyCheck':      return handleDailyCheck(body);
-      case 'uploadPhoto':     return handleUploadPhoto(body);
-      default:                return errorResponse('Unknown action: ' + action, 404);
+      case 'uploadPhoto':          return handleUploadPhoto(body);
+      case 'saveCategory':         return handleSaveCategory(body);
+      case 'deleteCategory':       return handleDeleteCategory(body);
+      case 'saveBehaviorScore':    return handleSaveBehaviorScore(body);
+      case 'deleteBehaviorScore':  return handleDeleteBehaviorScore(body);
+      case 'saveHygieneCheck':     return handleSaveHygieneCheck(body);
+      case 'deleteHygieneCheck':   return handleDeleteHygieneCheck(body);
+      default:                     return errorResponse('Unknown action: ' + action, 404);
     }
   } catch (err) {
     Logger.log('doPost Error: ' + err.toString());
@@ -109,8 +124,11 @@ function createSheet(ss, name) {
     Zones:      ['zone_id','zone_name','active'],
     Students:   ['student_id','fullname','class','room','zone_id','active'],
     DailyCheck: ['check_id','date','zone_id','inspector_name','star_rating','comment','created_at'],
-    Attendance: ['attendance_id','check_id','student_id','status','note'],
-    Photos:     ['photo_id','check_id','type','drive_url','uploaded_at'],
+    Attendance:     ['attendance_id','check_id','student_id','status','note'],
+    Photos:         ['photo_id','check_id','type','drive_url','uploaded_at'],
+    BehaviorScore:  ['score_id','student_id','date','type','category_id','category_name','points','note','teacher','created_at'],
+    HygieneCheck:   ['hygiene_id','student_id','date','month','year','haircut','spoon','glass','toothbrush','body_clean','note','inspector','created_at'],
+    ScoreCategory:  ['cat_id','name','default_points','type','icon','active'],
   };
   if (headers[name]) {
     sheet.getRange(1, 1, 1, headers[name].length).setValues([headers[name]]);
@@ -704,4 +722,568 @@ function testDriveWrite() {
   }
 
   Logger.log('=== testDriveWrite END ===');
+}
+
+// ============================================================
+//  ระบบบันทึกคะแนนความประพฤติ — Behavior Score System
+//  เพิ่มเติมจากระบบตรวจเวร ใช้ฐานข้อมูลนักเรียนร่วมกัน
+// ============================================================
+
+// ─── BEHAVIOR: doGet / doPost routes ─────────────────────────
+// (เพิ่มใน switch ใน doGet/doPost เดิมไม่ได้ เลยเช็คที่นี่)
+// วิธีใช้: เพิ่ม case ใน doGet และ doPost เดิม ดังนี้
+/*
+  doGet:
+    case 'behaviorCategories':  return handleGetCategories();
+    case 'behaviorScores':      return handleGetBehaviorScores(e.parameter);
+    case 'behaviorDashboard':   return handleGetBehaviorDashboard(e.parameter);
+    case 'behaviorReport':      return handleGetBehaviorReport(e.parameter);
+  doPost:
+    case 'saveCategory':        return handleSaveCategory(body);
+    case 'deleteCategory':      return handleDeleteCategory(body);
+    case 'saveBehaviorScore':   return handleSaveBehaviorScore(body);
+    case 'deleteBehaviorScore': return handleDeleteBehaviorScore(body);
+*/
+
+// ─── SCORE CATEGORY HANDLERS ─────────────────────────────────
+function handleGetCategories() {
+  var rows = sheetToObjects(getSheet(CONFIG.SHEETS.SCORE_CATEGORY));
+  return jsonResponse(rows);
+}
+
+function handleSaveCategory(body) {
+  var sheet   = getSheet(CONFIG.SHEETS.SCORE_CATEGORY);
+  var rows    = sheet.getDataRange().getValues();
+  var headers = rows[0];
+
+  if (body.cat_id) {
+    // UPDATE
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][0] === body.cat_id) {
+        var c = {};
+        headers.forEach(function(h, idx) { c[h] = idx; });
+        sheet.getRange(i+1, c.name+1).setValue(body.name);
+        sheet.getRange(i+1, c.default_points+1).setValue(body.default_points);
+        sheet.getRange(i+1, c.type+1).setValue(body.type);
+        sheet.getRange(i+1, c.icon+1).setValue(body.icon || '📝');
+        sheet.getRange(i+1, c.active+1).setValue(body.active !== false ? 'TRUE' : 'FALSE');
+        return jsonResponse({ cat_id: body.cat_id, updated: true });
+      }
+    }
+    return errorResponse('Category not found', 404);
+  } else {
+    // INSERT
+    var num   = rows.length;
+    var newId = 'CAT' + String(num).padStart(3,'0');
+    sheet.appendRow([
+      newId, body.name,
+      Number(body.default_points),
+      body.type || 'add',
+      body.icon || '📝',
+      'TRUE'
+    ]);
+    return jsonResponse({ cat_id: newId, created: true });
+  }
+}
+
+function handleDeleteCategory(body) {
+  var sheet = getSheet(CONFIG.SHEETS.SCORE_CATEGORY);
+  var rows  = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][0] === body.cat_id) {
+      sheet.getRange(i+1, 6).setValue('FALSE');
+      return jsonResponse({ cat_id: body.cat_id, deleted: true });
+    }
+  }
+  return errorResponse('Not found', 404);
+}
+
+function initDefaultCategories() {
+  var sheet = getSheet(CONFIG.SHEETS.SCORE_CATEGORY);
+  if (sheet.getLastRow() > 1) {
+    Logger.log('Categories already exist');
+    return;
+  }
+  var defaults = [
+    ['CAT001','ช่วยเหลืองานโรงเรียน', 5,'add','🌟','TRUE'],
+    ['CAT002','ทำความดีช่วยเหลือผู้อื่น', 3,'add','💛','TRUE'],
+    ['CAT003','ส่งงานตรงเวลาครบถ้วน', 2,'add','📚','TRUE'],
+    ['CAT004','รักษาความสะอาด', 2,'add','🧹','TRUE'],
+    ['CAT005','ได้รับรางวัล/เกียรติยศ',10,'add','🏆','TRUE'],
+    ['CAT006','ทะเลาะวิวาท',         -10,'sub','⚠️','TRUE'],
+    ['CAT007','ไม่ส่งงาน/การบ้าน',    -3,'sub','📕','TRUE'],
+    ['CAT008','มาสาย',                -2,'sub','⏰','TRUE'],
+    ['CAT009','พูดจาไม่สุภาพ',        -3,'sub','🚫','TRUE'],
+    ['CAT010','ฝ่าฝืนระเบียบโรงเรียน',-5,'sub','❌','TRUE'],
+  ];
+  defaults.forEach(function(row) { sheet.appendRow(row); });
+  Logger.log('Default categories created: ' + defaults.length);
+}
+
+// ─── BEHAVIOR SCORE HANDLERS ──────────────────────────────────
+function handleSaveBehaviorScore(body) {
+  if (!body.student_id)   throw new Error('ไม่มี student_id');
+  if (!body.category_id)  throw new Error('ไม่มี category_id');
+  if (!body.teacher)      throw new Error('ไม่มีชื่อครูผู้บันทึก');
+  if (body.points === undefined) throw new Error('ไม่มีคะแนน');
+
+  var scoreId   = generateId('BHV');
+  var now       = new Date();
+  var dateStr   = body.date || Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd');
+  var timestamp = Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
+  var points    = Number(body.points);
+  var type      = points >= 0 ? 'add' : 'sub';
+
+  var sheet = getSheet(CONFIG.SHEETS.BEHAVIOR_SCORE);
+  sheet.appendRow([
+    scoreId,
+    body.student_id,
+    dateStr,
+    type,
+    body.category_id,
+    body.category_name || '',
+    points,
+    body.note || '',
+    body.teacher,
+    timestamp,
+  ]);
+  SpreadsheetApp.flush();
+  Logger.log('BehaviorScore saved: ' + scoreId + ' student=' + body.student_id + ' pts=' + points);
+  return jsonResponse({ score_id: scoreId, saved: true });
+}
+
+function handleDeleteBehaviorScore(body) {
+  var sheet = getSheet(CONFIG.SHEETS.BEHAVIOR_SCORE);
+  var rows  = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][0] === body.score_id) {
+      sheet.deleteRow(i + 1);
+      return jsonResponse({ score_id: body.score_id, deleted: true });
+    }
+  }
+  return errorResponse('Not found', 404);
+}
+
+function handleGetBehaviorScores(params) {
+  var scores   = sheetToObjects(getSheet(CONFIG.SHEETS.BEHAVIOR_SCORE));
+  var students = sheetToObjects(getSheet(CONFIG.SHEETS.STUDENTS));
+  var stuMap   = {};
+  students.forEach(function(s) { stuMap[s.student_id] = s; });
+
+  var filtered = scores;
+  if (params.student_id) filtered = filtered.filter(function(r) { return r.student_id === params.student_id; });
+  if (params.date)       filtered = filtered.filter(function(r) { return formatDate(r.date) === params.date; });
+  if (params.month && params.year) {
+    filtered = filtered.filter(function(r) {
+      var d = new Date(r.date);
+      return d.getMonth()+1 === parseInt(params.month) && d.getFullYear() === parseInt(params.year);
+    });
+  }
+
+  var result = filtered.map(function(r) {
+    var stu = stuMap[r.student_id] || {};
+    return Object.assign({}, r, {
+      fullname: stu.fullname || r.student_id,
+      class: stu.class || '',
+      room:  stu.room  || '',
+      zone_id: stu.zone_id || '',
+    });
+  }).sort(function(a,b) { return String(b.created_at).localeCompare(String(a.created_at)); });
+
+  return jsonResponse(result);
+}
+
+// ─── BEHAVIOR DASHBOARD ───────────────────────────────────────
+function handleGetBehaviorDashboard(params) {
+  var now      = new Date();
+  var month    = params.month ? parseInt(params.month) : now.getMonth() + 1;
+  var year     = params.year  ? parseInt(params.year)  : now.getFullYear();
+
+  var scores   = sheetToObjects(getSheet(CONFIG.SHEETS.BEHAVIOR_SCORE));
+  var students = sheetToObjects(getSheet(CONFIG.SHEETS.STUDENTS));
+
+  // นักเรียน active ทั้งหมด
+  var activeStudents = students.filter(function(s) {
+    return String(s.active).toUpperCase() === 'TRUE';
+  });
+
+  // กรองเดือนปัจจุบัน
+  var monthScores = scores.filter(function(r) {
+    var d = new Date(r.date);
+    return d.getMonth()+1 === month && d.getFullYear() === year;
+  });
+
+  // คะแนนรวมรายคน (เริ่มต้น 10 คะแนน + บวก/หัก)
+  var INITIAL_SCORE = 10;
+  var stuScoreMap   = {};
+  activeStudents.forEach(function(s) {
+    stuScoreMap[s.student_id] = { student: s, total: INITIAL_SCORE, add: 0, sub: 0 };
+  });
+  monthScores.forEach(function(r) {
+    if (!stuScoreMap[r.student_id]) return;
+    var pts = Number(r.points);
+    stuScoreMap[r.student_id].total += pts;
+    if (pts >= 0) stuScoreMap[r.student_id].add += pts;
+    else          stuScoreMap[r.student_id].sub += Math.abs(pts);
+  });
+
+  // Top 10
+  var ranking = Object.values(stuScoreMap)
+    .sort(function(a,b) { return b.total - a.total; })
+    .slice(0, 10)
+    .map(function(r) {
+      return {
+        student_id: r.student.student_id,
+        fullname:   r.student.fullname,
+        class:      r.student.class,
+        room:       r.student.room,
+        total:      r.total,
+        add:        r.add,
+        sub:        r.sub,
+      };
+    });
+
+  // 10 รายการล่าสุด
+  var stuMap = {};
+  activeStudents.forEach(function(s) { stuMap[s.student_id] = s; });
+  var recent = scores
+    .sort(function(a,b) { return String(b.created_at).localeCompare(String(a.created_at)); })
+    .slice(0, 10)
+    .map(function(r) {
+      var stu = stuMap[r.student_id] || {};
+      return {
+        score_id:      r.score_id,
+        student_id:    r.student_id,
+        fullname:      stu.fullname || r.student_id,
+        class:         stu.class || '',
+        room:          stu.room  || '',
+        date:          formatDate(r.date),
+        type:          r.type,
+        category_name: r.category_name,
+        points:        Number(r.points),
+        note:          r.note,
+        teacher:       r.teacher,
+      };
+    });
+
+  // สถิติรายเดือน
+  var totalAdd  = monthScores.filter(function(r){return Number(r.points)>=0;}).reduce(function(s,r){return s+Number(r.points);},0);
+  var totalSub  = monthScores.filter(function(r){return Number(r.points)<0;}).reduce(function(s,r){return s+Math.abs(Number(r.points));},0);
+  var totalTxn  = monthScores.length;
+
+  // นักเรียนคะแนนสูงสุดของเดือน (รวม all-time month scores)
+  var monthWinner = ranking.length > 0 ? ranking[0] : null;
+
+  return jsonResponse({
+    month: month, year: year,
+    ranking:       ranking,
+    recent:        recent,
+    stats: {
+      total_transactions: totalTxn,
+      total_add:          totalAdd,
+      total_sub:          totalSub,
+      active_students:    activeStudents.length,
+    },
+    month_winner: monthWinner,
+  });
+}
+
+// ─── BEHAVIOR REPORT (รายคน / รายเดือน) ─────────────────────
+function handleGetBehaviorReport(params) {
+  var month  = parseInt(params.month);
+  var year   = parseInt(params.year);
+
+  var scores   = sheetToObjects(getSheet(CONFIG.SHEETS.BEHAVIOR_SCORE));
+  var students = sheetToObjects(getSheet(CONFIG.SHEETS.STUDENTS));
+
+  var activeStudents = students.filter(function(s) {
+    return String(s.active).toUpperCase() === 'TRUE';
+  });
+
+  var monthScores = scores.filter(function(r) {
+    var d = new Date(r.date);
+    return d.getMonth()+1 === month && d.getFullYear() === year;
+  });
+
+  var INITIAL_SCORE = 10;
+  var stuMap = {};
+  activeStudents.forEach(function(s) { stuMap[s.student_id] = s; });
+
+  var studentReport = activeStudents.map(function(s) {
+    var myScores = monthScores.filter(function(r) { return r.student_id === s.student_id; });
+    var totalAdd = myScores.filter(function(r){return Number(r.points)>=0;}).reduce(function(a,r){return a+Number(r.points);},0);
+    var totalSub = myScores.filter(function(r){return Number(r.points)<0;}).reduce(function(a,r){return a+Math.abs(Number(r.points));},0);
+    var total    = INITIAL_SCORE + totalAdd - totalSub;
+    return {
+      student_id: s.student_id,
+      fullname:   s.fullname,
+      class:      s.class,
+      room:       s.room,
+      initial:    INITIAL_SCORE,
+      add:        totalAdd,
+      sub:        totalSub,
+      total:      total,
+      transactions: myScores.length,
+    };
+  }).sort(function(a,b) { return b.total - a.total; });
+
+  return jsonResponse({
+    month: month, year: year,
+    student_report: studentReport,
+    total_transactions: monthScores.length,
+  });
+}
+
+// ─── INIT BEHAVIOR (รันครั้งเดียว) ──────────────────────────
+function initBehaviorSystem() {
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  ['BehaviorScore','ScoreCategory'].forEach(function(name) {
+    if (!ss.getSheetByName(name)) {
+      createSheet(ss, name);
+      Logger.log('Created: ' + name);
+    } else {
+      Logger.log('Already exists: ' + name);
+    }
+  });
+  initDefaultCategories();
+  Logger.log('Behavior system initialized!');
+}
+
+// ============================================================
+//  ระบบตรวจสุขลักษณะนักเรียน — Hygiene Check System
+//  รายการ: ผม | ช้อน | แก้วน้ำ | แปรงสีฟัน | ร่างกาย
+// ============================================================
+
+// ─── SAVE HYGIENE CHECK ──────────────────────────────────────
+function handleSaveHygieneCheck(body) {
+  if (!body.date)      throw new Error('ไม่มีวันที่');
+  if (!body.inspector) throw new Error('ไม่มีชื่อผู้ตรวจ');
+  if (!body.records || !body.records.length) throw new Error('ไม่มีข้อมูลนักเรียน');
+
+  var sheet     = getSheet(CONFIG.SHEETS.HYGIENE_CHECK);
+  var now       = new Date();
+  var dateStr   = body.date;
+  var dateParts = dateStr.split('-');
+  var month     = parseInt(dateParts[1]);
+  var year      = parseInt(dateParts[0]);
+  var saved     = 0;
+
+  // ตรวจสอบว่ามีข้อมูลของวันนี้อยู่แล้วหรือยัง → ถ้ามีให้ลบก่อน update
+  var existing = sheet.getDataRange().getValues();
+  var delRows  = [];
+  for (var i = existing.length - 1; i >= 1; i--) {
+    var rowDate     = formatDate(existing[i][2]);
+    var rowStudentId = existing[i][1];
+    var studentInBody = body.records.some(function(r) { return r.student_id === rowStudentId; });
+    if (rowDate === dateStr && studentInBody) {
+      delRows.push(i + 1); // 1-based
+    }
+  }
+  // ลบจากล่างขึ้นบน
+  delRows.sort(function(a,b){return b-a;}).forEach(function(r) { sheet.deleteRow(r); });
+
+  // เพิ่มข้อมูลใหม่
+  body.records.forEach(function(rec) {
+    var hygieneId = generateId('HYG');
+    var timestamp = Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss');
+    sheet.appendRow([
+      hygieneId,
+      rec.student_id,
+      dateStr,
+      month,
+      year,
+      rec.haircut    ? 'pass' : 'fail',   // ผม
+      rec.spoon      ? 'pass' : 'fail',   // ช้อน
+      rec.glass      ? 'pass' : 'fail',   // แก้วน้ำ
+      rec.toothbrush ? 'pass' : 'fail',   // แปรงสีฟัน
+      rec.body_clean ? 'pass' : 'fail',   // ร่างกาย
+      rec.note       || '',
+      body.inspector,
+      timestamp,
+    ]);
+    saved++;
+  });
+
+  SpreadsheetApp.flush();
+  Logger.log('HygieneCheck saved: ' + saved + ' records for ' + dateStr);
+  return jsonResponse({ saved: saved, date: dateStr });
+}
+
+// ─── DELETE HYGIENE CHECK ────────────────────────────────────
+function handleDeleteHygieneCheck(body) {
+  var sheet = getSheet(CONFIG.SHEETS.HYGIENE_CHECK);
+  var rows  = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][0] === body.hygiene_id) {
+      sheet.deleteRow(i + 1);
+      return jsonResponse({ hygiene_id: body.hygiene_id, deleted: true });
+    }
+  }
+  return errorResponse('Not found', 404);
+}
+
+// ─── GET HYGIENE CHECKS ──────────────────────────────────────
+function handleGetHygieneChecks(params) {
+  var rows     = sheetToObjects(getSheet(CONFIG.SHEETS.HYGIENE_CHECK));
+  var students = sheetToObjects(getSheet(CONFIG.SHEETS.STUDENTS));
+  var stuMap   = {};
+  students.forEach(function(s) { stuMap[s.student_id] = s; });
+
+  var filtered = rows;
+
+  if (params.date) {
+    filtered = filtered.filter(function(r) { return formatDate(r.date) === params.date; });
+  }
+  if (params.month && params.year) {
+    filtered = filtered.filter(function(r) {
+      return String(r.month) === String(params.month) && String(r.year) === String(params.year);
+    });
+  }
+  if (params.student_id) {
+    filtered = filtered.filter(function(r) { return r.student_id === params.student_id; });
+  }
+
+  var result = filtered.map(function(r) {
+    var stu = stuMap[r.student_id] || {};
+    return {
+      hygiene_id:  r.hygiene_id,
+      student_id:  r.student_id,
+      fullname:    stu.fullname  || r.student_id,
+      class:       stu.class    || '',
+      room:        stu.room     || '',
+      zone_id:     stu.zone_id  || '',
+      date:        formatDate(r.date),
+      month:       r.month,
+      year:        r.year,
+      haircut:     r.haircut    === 'pass',
+      spoon:       r.spoon      === 'pass',
+      glass:       r.glass      === 'pass',
+      toothbrush:  r.toothbrush === 'pass',
+      body_clean:  r.body_clean === 'pass',
+      note:        r.note       || '',
+      inspector:   r.inspector  || '',
+      created_at:  r.created_at || '',
+      // คะแนนรวม (5 รายการ)
+      score: [r.haircut,r.spoon,r.glass,r.toothbrush,r.body_clean]
+               .filter(function(v){return v==='pass';}).length,
+    };
+  });
+
+  return jsonResponse(result);
+}
+
+// ─── GET HYGIENE REPORT (สรุปรายเดือน) ──────────────────────
+function handleGetHygieneReport(params) {
+  var month = parseInt(params.month);
+  var year  = parseInt(params.year);
+
+  var rows     = sheetToObjects(getSheet(CONFIG.SHEETS.HYGIENE_CHECK));
+  var students = sheetToObjects(getSheet(CONFIG.SHEETS.STUDENTS));
+
+  var activeStudents = students.filter(function(s) {
+    return String(s.active).toUpperCase() === 'TRUE';
+  });
+
+  var monthRows = rows.filter(function(r) {
+    return String(r.month) === String(month) && String(r.year) === String(year);
+  });
+
+  var stuMap = {};
+  activeStudents.forEach(function(s) { stuMap[s.student_id] = s; });
+
+  // รวมผลรายคน — ถ้าตรวจหลายครั้ง นับรอบล่าสุด
+  var stuResultMap = {};
+  monthRows.forEach(function(r) {
+    var existing = stuResultMap[r.student_id];
+    var ts = String(r.created_at || '');
+    if (!existing || ts > String(existing.created_at || '')) {
+      stuResultMap[r.student_id] = r;
+    }
+  });
+
+  var summary = activeStudents.map(function(s) {
+    var r = stuResultMap[s.student_id];
+    if (!r) {
+      return {
+        student_id: s.student_id, fullname: s.fullname,
+        class: s.class, room: s.room,
+        checked: false,
+        haircut: null, spoon: null, glass: null,
+        toothbrush: null, body_clean: null,
+        score: 0, note: '', inspector: '', date: '',
+      };
+    }
+    var score = [r.haircut,r.spoon,r.glass,r.toothbrush,r.body_clean]
+                  .filter(function(v){return v==='pass';}).length;
+    return {
+      student_id: s.student_id, fullname: s.fullname,
+      class: s.class, room: s.room,
+      checked:    true,
+      haircut:    r.haircut    === 'pass',
+      spoon:      r.spoon      === 'pass',
+      glass:      r.glass      === 'pass',
+      toothbrush: r.toothbrush === 'pass',
+      body_clean: r.body_clean === 'pass',
+      score:      score,
+      note:       r.note     || '',
+      inspector:  r.inspector|| '',
+      date:       formatDate(r.date),
+    };
+  }).sort(function(a,b) { return b.score - a.score; });
+
+  // สถิติ
+  var checked      = summary.filter(function(r){return r.checked;});
+  var passAll      = summary.filter(function(r){return r.score === 5;}).length;
+  var failHaircut  = checked.filter(function(r){return !r.haircut;}).length;
+  var failSpoon    = checked.filter(function(r){return !r.spoon;}).length;
+  var failGlass    = checked.filter(function(r){return !r.glass;}).length;
+  var failToothbrush = checked.filter(function(r){return !r.toothbrush;}).length;
+  var failBody     = checked.filter(function(r){return !r.body_clean;}).length;
+
+  // วันที่ตรวจ (unique)
+  var dates = [...new Set(monthRows.map(function(r){return formatDate(r.date);}))].sort();
+
+  return jsonResponse({
+    month: month, year: year,
+    total_students:    activeStudents.length,
+    checked_students:  checked.length,
+    pass_all:          passAll,
+    check_dates:       dates,
+    fail_stats: {
+      haircut:    failHaircut,
+      spoon:      failSpoon,
+      glass:      failGlass,
+      toothbrush: failToothbrush,
+      body_clean: failBody,
+    },
+    student_summary: summary,
+  });
+}
+
+// ─── INIT HYGIENE SHEET (รันครั้งเดียว ไม่แตะ Sheet เดิม) ──
+function initHygieneSheet() {
+  Logger.log('=== initHygieneSheet START ===');
+  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var name  = CONFIG.SHEETS.HYGIENE_CHECK;
+  var sheet = ss.getSheetByName(name);
+
+  if (sheet) {
+    Logger.log('HygieneCheck sheet already exists — rows: ' + sheet.getLastRow());
+  } else {
+    sheet = ss.insertSheet(name);
+    sheet.getRange(1,1,1,13).setValues([[
+      'hygiene_id','student_id','date','month','year',
+      'haircut','spoon','glass','toothbrush','body_clean',
+      'note','inspector','created_at'
+    ]]);
+    Logger.log('HygieneCheck sheet created with headers');
+  }
+
+  // ตรวจสอบ Sheet เดิม ว่ายังอยู่ครบ
+  var existing = ['Zones','Students','DailyCheck','Attendance','Photos'];
+  existing.forEach(function(n) {
+    var s = ss.getSheetByName(n);
+    Logger.log((s ? '✅' : '❌') + ' ' + n + ': ' + (s ? s.getLastRow()+' rows' : 'NOT FOUND'));
+  });
+  Logger.log('=== initHygieneSheet DONE ===');
 }
