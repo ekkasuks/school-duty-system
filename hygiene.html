@@ -217,13 +217,13 @@
       </div>
     </div>
 
-    <!-- ACTION BUTTONS -->
-    <div id="action-btns" style="display:none;">
+    <!-- ACTION BUTTONS — อยู่นอก hyg-panel แต่ใน filter-wrap -->
+    <div id="action-btns" style="margin-top:0.85rem;">
       <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
-        <button class="btn btn-primary btn-lg" style="flex:2;" onclick="saveHygiene()">
+        <button class="btn btn-primary btn-lg" style="flex:2; min-width:200px;" onclick="saveHygiene()">
           <i class="fas fa-save"></i> บันทึกผลการตรวจ
         </button>
-        <button class="btn btn-secondary" style="flex:1;" onclick="markAllPass()">
+        <button class="btn btn-secondary btn-lg" style="flex:1; min-width:140px;" onclick="markAllPass()">
           <i class="fas fa-check-double"></i> ผ่านทั้งหมด
         </button>
       </div>

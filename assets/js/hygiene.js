@@ -64,9 +64,7 @@ async function loadStudents() {
 
     buildClassTabs();
     renderList();
-    document.getElementById('filter-wrap').style.display = '';
-    document.getElementById('list-wrap').style.display   = '';
-    document.getElementById('action-btns').style.display = '';
+    document.getElementById('filter-wrap').style.display  = '';
 
     if (existing.length) {
       Toast.info(`พบข้อมูลที่บันทึกไว้ ${existing.length} คน — โหลดค่าเดิมแล้ว`);
