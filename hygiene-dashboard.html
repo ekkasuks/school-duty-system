@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard สุขลักษณะ</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/print.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.item-bar-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 0; border-bottom: 1px solid var(--border);
+}
+.item-bar-row:last-child { border-bottom: none; }
+.item-icon { font-size: 1.3rem; width: 32px; text-align: center; flex-shrink: 0; }
+.item-label { font-weight: 600; font-size: 0.9rem; width: 110px; flex-shrink: 0; }
+.item-bar-wrap { flex: 1; }
+.item-bar-bg { background: var(--border); border-radius: 99px; height: 12px; overflow: hidden; }
+.item-bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.5s; }
+.item-bar-fill.warn { background: var(--accent2); }
+.item-bar-fill.danger { background: var(--danger); }
+.item-pct { font-weight: 700; font-size: 0.88rem; width: 42px; text-align: right; flex-shrink: 0; }
+.class-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0; border-bottom: 1px solid var(--border);
+}
+.class-row:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><i class="fas fa-broom"></i> ระบบตรวจเวร</a>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-links">
+    <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+    <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
+    <a href="hygiene.html"><i class="fas fa-heartbeat"></i> สุขลักษณะ</a>
+    <a href="hygiene-dashboard.html"><i class="fas fa-chart-bar"></i> Dashboard สุขลักษณะ</a>
+    <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
+    <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  </div>
+  <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
+  <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรความสะอาด</a>
+  <a href="hygiene.html"><i class="fas fa-heartbeat"></i> ตรวจสุขลักษณะ</a>
+  <a href="hygiene-dashboard.html"><i class="fas fa-chart-bar"></i> Dashboard สุขลักษณะ</a>
+  <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard ตรวจเวร</a>
+  <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
+</div>
+
+<div class="page-wrapper">
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="page-header" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+    <div>
+      <div class="page-title"><i class="fas fa-chart-bar" style="color:#A855F7;"></i> Dashboard สุขลักษณะ</div>
+      <div class="page-subtitle" id="period-label">กำลังโหลด...</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+      <select class="form-control" id="sel-month" style="width:auto;" onchange="loadDashboard()"></select>
+      <select class="form-control" id="sel-year"  style="width:auto;" onchange="loadDashboard()"></select>
+      <button class="btn btn-secondary" onclick="loadDashboard()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stats-grid" style="margin-bottom:1.25rem;">
+    <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-users"></i></div>
+      <div><div class="stat-value" id="st-total">—</div><div class="stat-label">นักเรียนทั้งหมด</div></div></div>
+    <div class="stat-card"><div class="stat-icon green"><i class="fas fa-clipboard-check"></i></div>
+      <div><div class="stat-value" id="st-checked">—</div><div class="stat-label">ได้รับการตรวจ</div></div></div>
+    <div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-star"></i></div>
+      <div><div class="stat-value" id="st-pass-all">—</div><div class="stat-label">ผ่านทุกรายการ</div></div></div>
+    <div class="stat-card"><div class="stat-icon pink"><i class="fas fa-calendar-alt"></i></div>
+      <div><div class="stat-value" id="st-dates">—</div><div class="stat-label">ครั้งที่ตรวจ</div></div></div>
+  </div>
+
+  <!-- ITEM PASS RATE + CLASS CHART -->
+  <div class="grid-2" style="margin-bottom:1.25rem;">
+
+    <!-- อัตราผ่านรายการ -->
+    <div class="card">
+      <div class="card-header" style="background:linear-gradient(90deg,#FAF5FF,#EDE9FE);">
+        <i class="fas fa-list-check" style="color:#A855F7;"></i>
+        <h3>อัตราผ่านรายการตรวจ</h3>
+      </div>
+      <div class="card-body" id="item-bars"></div>
+    </div>
+
+    <!-- อัตราผ่านรายชั้น -->
+    <div class="card">
+      <div class="card-header" style="background:linear-gradient(90deg,#EFF6FF,#DBEAFE);">
+        <i class="fas fa-school" style="color:var(--primary);"></i>
+        <h3>อัตราผ่านรายชั้น</h3>
+      </div>
+      <div class="card-body" id="class-bars"></div>
+    </div>
+
+  </div>
+
+  <!-- TOP / BOTTOM STUDENTS -->
+  <div class="grid-2" style="margin-bottom:1.25rem;">
+    <div class="card">
+      <div class="card-header green"><i class="fas fa-trophy"></i><h3>🏆 ผ่านครบทุกรายการ</h3></div>
+      <div class="card-body"><div class="ranking-list" id="top-students"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header" style="background:linear-gradient(135deg,#FF7B7B,#e05f5f);color:#fff;border:none;">
+        <i class="fas fa-exclamation-circle" style="color:#fff;"></i>
+        <h3 style="color:#fff;">ต้องปรับปรุง (คะแนน &lt; 3)</h3>
+      </div>
+      <div class="card-body"><div class="ranking-list" id="low-students"></div></div>
+    </div>
+  </div>
+
+  <!-- CHECK DATES -->
+  <div class="card">
+    <div class="card-header" style="background:linear-gradient(90deg,#FAF5FF,#EDE9FE);">
+      <i class="fas fa-calendar-check" style="color:#A855F7;"></i>
+      <h3>วันที่มีการตรวจเดือนนี้</h3>
+    </div>
+    <div class="card-body" id="check-dates-wrap">
+      <div class="empty-state"><i class="fas fa-calendar"></i><p>ยังไม่มีข้อมูล</p></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+const THAI_MONTHS = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const ITEMS = [
+  { key:'haircut',    label:'ทรงผม',     icon:'🪮' },
+  { key:'spoon',      label:'ช้อน',       icon:'🥄' },
+  { key:'glass',      label:'แก้วน้ำ',    icon:'🥤' },
+  { key:'toothbrush', label:'แปรงสีฟัน', icon:'🪥' },
+  { key:'body_clean', label:'ยาสีฟัน',   icon:'🪥' },
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  const selM = document.getElementById('sel-month');
+  const selY = document.getElementById('sel-year');
+  THAI_MONTHS.slice(1).forEach((n,i) => {
+    const o = document.createElement('option');
+    o.value = i+1; o.textContent = n;
+    if (i+1 === now.getMonth()+1) o.selected = true;
+    selM.appendChild(o);
+  });
+  for (let y = now.getFullYear(); y >= now.getFullYear()-2; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y+543;
+    if (y === now.getFullYear()) o.selected = true;
+    selY.appendChild(o);
+  }
+  loadDashboard();
+});
+
+async function loadDashboard() {
+  const month = parseInt(document.getElementById('sel-month').value);
+  const year  = parseInt(document.getElementById('sel-year').value);
+  document.getElementById('period-label').textContent = `ข้อมูลเดือน ${THAI_MONTHS[month]} ${year+543}`;
+  Loading.show('กำลังโหลด...');
+  try {
+    const d = await HygieneAPI.getReport(month, year);
+    renderDashboard(d);
+  } catch(e) {
+    Toast.error('โหลดไม่สำเร็จ: ' + e.message);
+  } finally { Loading.hide(); }
+}
+
+function renderDashboard(d) {
+  // Stat cards
+  document.getElementById('st-total').textContent    = d.total_students;
+  document.getElementById('st-checked').textContent  = d.checked_students;
+  document.getElementById('st-pass-all').textContent = d.pass_all;
+  document.getElementById('st-dates').textContent    = d.check_dates.length;
+
+  const checked = d.student_summary.filter(r => r.checked);
+
+  // Item pass rate bars
+  const itemBars = document.getElementById('item-bars');
+  if (!checked.length) {
+    itemBars.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>ยังไม่มีข้อมูล</p></div>';
+  } else {
+    itemBars.innerHTML = ITEMS.map(item => {
+      const passCount = checked.filter(r => r[item.key]).length;
+      const pct = Math.round(passCount / checked.length * 100);
+      const cls = pct >= 80 ? '' : pct >= 60 ? 'warn' : 'danger';
+      return `<div class="item-bar-row">
+        <div class="item-icon">${item.icon}</div>
+        <div class="item-label">${item.label}</div>
+        <div class="item-bar-wrap">
+          <div class="item-bar-bg">
+            <div class="item-bar-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+        </div>
+        <div class="item-pct" style="color:${pct<60?'var(--danger)':pct<80?'#D97706':'#065F46'}">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Class bars
+  const classBars = document.getElementById('class-bars');
+  const classes = [...new Set(d.student_summary.map(r => String(r.class)))].sort((a,b)=>+a-+b);
+  if (!classes.length) {
+    classBars.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>ยังไม่มีข้อมูล</p></div>';
+  } else {
+    classBars.innerHTML = classes.map(cls => {
+      const clsStudents = d.student_summary.filter(r => String(r.class) === cls);
+      const clsChecked  = clsStudents.filter(r => r.checked);
+      const clsPass     = clsStudents.filter(r => r.score === 5).length;
+      const total       = clsStudents.length;
+      const pct         = total > 0 ? Math.round(clsPass/total*100) : 0;
+      const cls2        = pct >= 80?'':pct>=60?'warn':'danger';
+      return `<div class="class-row">
+        <div style="font-weight:700;width:50px;flex-shrink:0;">ป.${cls}</div>
+        <div style="flex:1;">
+          <div class="item-bar-bg">
+            <div class="item-bar-fill ${cls2}" style="width:${pct}%"></div>
+          </div>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text-lt);width:90px;text-align:right;flex-shrink:0;">
+          ผ่านทุก ${clsPass}/${total} คน
+        </div>
+        <div class="item-pct" style="color:${pct<60?'var(--danger)':pct<80?'#D97706':'#065F46'}">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Top (score 5) and Low (score < 3)
+  const topList = d.student_summary.filter(r => r.checked && r.score === 5).slice(0,10);
+  const lowList = d.student_summary.filter(r => r.checked && r.score < 3).slice(0,10);
+
+  document.getElementById('top-students').innerHTML = topList.length
+    ? topList.map((r,i) => `
+        <div class="ranking-item">
+          <div class="rank-num ${i<3?['top1','top2','top3'][i]:''}">${i+1}</div>
+          <div class="rank-info">
+            <div class="rank-name">${r.fullname}</div>
+            <div class="rank-sub">ป.${r.class}/${r.room}</div>
+          </div>
+          <div class="rank-score" style="color:var(--accent);">5/5 ✅</div>
+        </div>`).join('')
+    : '<div class="empty-state"><i class="fas fa-inbox"></i><p>ยังไม่มีข้อมูล</p></div>';
+
+  document.getElementById('low-students').innerHTML = lowList.length
+    ? lowList.map((r,i) => `
+        <div class="ranking-item">
+          <div class="rank-num">${i+1}</div>
+          <div class="rank-info">
+            <div class="rank-name">${r.fullname}</div>
+            <div class="rank-sub">ป.${r.class}/${r.room}</div>
+          </div>
+          <div class="rank-score" style="color:var(--danger);">${r.score}/5</div>
+        </div>`).join('')
+    : '<div class="empty-state" style="padding:1rem;"><i class="fas fa-check-circle" style="color:var(--accent);"></i><p>ไม่มีนักเรียนที่ต้องปรับปรุง</p></div>';
+
+  // Check dates
+  const datesWrap = document.getElementById('check-dates-wrap');
+  if (d.check_dates.length) {
+    datesWrap.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+      ${d.check_dates.map(dt => `
+        <span class="badge badge-blue" style="font-size:0.88rem;padding:0.35rem 0.8rem;">
+          <i class="fas fa-calendar-check"></i> ${formatThaiDate(dt)}
+        </span>`).join('')}
+    </div>`;
+  } else {
+    datesWrap.innerHTML = '<div class="empty-state"><i class="fas fa-calendar"></i><p>ยังไม่มีการตรวจเดือนนี้</p></div>';
+  }
+}
+</script>
+</body>
+</html>

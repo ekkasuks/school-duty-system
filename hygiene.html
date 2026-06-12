@@ -8,103 +8,121 @@
 <link rel="stylesheet" href="assets/css/print.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-/* ── Hygiene Items Header ── */
+/* ── Class Filter Tabs ── */
+.class-tabs-wrap {
+  display: flex; gap: 0.4rem; flex-wrap: wrap;
+  padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.class-tab-btn {
+  padding: 0.45rem 1rem; border-radius: 99px; font-size: 0.88rem;
+  font-weight: 700; border: 1.5px solid var(--border);
+  background: var(--card); cursor: pointer; font-family: var(--font);
+  color: var(--text-lt); transition: all 0.15s;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.class-tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.class-tab-btn:hover:not(.active) { background: var(--bg); border-color: var(--primary); color: var(--primary); }
+.tab-count {
+  background: rgba(0,0,0,0.1); border-radius: 99px;
+  padding: 0 0.4rem; font-size: 0.75rem;
+}
+.class-tab-btn.active .tab-count { background: rgba(255,255,255,0.25); }
+
+/* ── Class Group Header ── */
+.class-group { margin-bottom: 0.25rem; }
+.class-group-header {
+  padding: 0.5rem 1rem; font-weight: 700; font-size: 0.85rem;
+  background: var(--bg2); color: var(--primary);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.4rem;
+}
+
+/* ── Legend ── */
 .hygiene-legend {
   display: grid;
-  grid-template-columns: 1fr repeat(5, 52px);
-  gap: 0.25rem;
-  align-items: center;
-  padding: 0.6rem 1rem;
-  background: var(--bg2);
-  border-bottom: 2px solid var(--border);
+  grid-template-columns: 1fr repeat(5, 48px);
+  gap: 0.2rem; align-items: center;
+  padding: 0.5rem 1rem;
+  background: #fff; border-bottom: 2px solid var(--border);
   position: sticky; top: var(--nav-h); z-index: 10;
 }
-.legend-label {
-  font-size: 0.7rem; font-weight: 700; text-align: center;
+.legend-col {
+  font-size: 0.68rem; font-weight: 700; text-align: center;
   color: var(--text-lt); line-height: 1.3;
 }
-.legend-icon { font-size: 1.2rem; text-align: center; }
 
-/* ── Hygiene Row ── */
+/* ── Row ── */
 .hygiene-row {
   display: grid;
-  grid-template-columns: 1fr repeat(5, 52px);
-  gap: 0.25rem;
-  align-items: center;
-  padding: 0.55rem 1rem;
+  grid-template-columns: 1fr repeat(5, 48px);
+  gap: 0.2rem; align-items: center;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
+  transition: background 0.12s;
 }
-.hygiene-row:last-child { border-bottom: none; }
-.hygiene-row:hover { background: #fafafe; }
 .hygiene-row.all-pass { background: #f0fff5; }
 .hygiene-row.has-fail  { background: #fff8f8; }
+.hygiene-row:hover { filter: brightness(0.97); }
 
-.stu-info .stu-name  { font-weight: 700; font-size: 0.93rem; }
-.stu-info .stu-class { font-size: 0.76rem; color: var(--text-lt); }
+.stu-info { min-width: 0; cursor: pointer; }
+.stu-name {
+  font-weight: 700; font-size: 0.92rem;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.stu-class { font-size: 0.74rem; color: var(--text-lt); margin-top: 1px; }
+.saved-badge {
+  font-size: 0.68rem; background: var(--accent);
+  color: #065F46; padding: 0.05rem 0.35rem;
+  border-radius: 4px; font-weight: 700; flex-shrink: 0;
+}
 
-/* ── Toggle Checkbox ── */
+/* ── Check Button ── */
 .hyg-check {
   width: 44px; height: 44px; border-radius: 10px;
-  border: 2px solid var(--border); background: #fff;
+  border: 1.5px solid var(--border); background: #fff;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 1.15rem; transition: all 0.15s;
+  cursor: pointer; font-size: 1.1rem; transition: all 0.12s;
   -webkit-tap-highlight-color: transparent;
   user-select: none; margin: 0 auto;
 }
 .hyg-check.pass  { background: #D1FAE5; border-color: #6EE7B7; }
 .hyg-check.fail  { background: #FEE2E2; border-color: #FCA5A5; }
-.hyg-check:active { transform: scale(0.9); }
+.hyg-check:active { transform: scale(0.88); }
 
-/* ── Note row (ซ่อนถ้าไม่ได้กด) ── */
-.note-row {
-  grid-column: 1 / -1;
-  padding: 0.25rem 1rem 0.6rem;
-  display: none;
-}
+/* ── Note Row ── */
+.note-row { display: none; padding: 0.2rem 1rem 0.55rem; grid-column: 1/-1; }
 .note-row.show { display: block; }
 .note-input {
-  width: 100%; padding: 0.35rem 0.7rem;
+  width: 100%; padding: 0.32rem 0.65rem;
   border: 1px solid var(--border); border-radius: 8px;
   font-family: var(--font); font-size: 0.82rem; background: var(--bg);
 }
 
-/* ── Summary bar ── */
+/* ── Summary Bar ── */
 .summary-bar {
-  display: flex; gap: 1rem; flex-wrap: wrap;
-  padding: 0.75rem 1rem;
-  background: var(--bg2); border-top: 1px solid var(--border);
+  padding: 0.7rem 1rem; background: var(--bg2);
+  border-top: 2px solid var(--border);
+  display: flex; flex-direction: column; gap: 0.35rem;
 }
+.sum-row1 { display: flex; gap: 1.25rem; flex-wrap: wrap; }
 .sum-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; }
-.sum-dot  { width: 10px; height: 10px; border-radius: 50%; }
+.sum-dot  { width: 9px; height: 9px; border-radius: 50%; }
+.sum-items-detail { font-size: 0.8rem; color: var(--text-lt); }
 
-/* ── Zone tabs ── */
-.zone-tabs {
-  display: flex; gap: 0.4rem; flex-wrap: wrap;
-  padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
-  background: var(--card);
+/* ── Panel ── */
+.hyg-panel {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+  margin-bottom: 1.1rem; overflow: hidden;
 }
-.zone-tab-btn {
-  padding: 0.4rem 0.9rem; border-radius: 99px; font-size: 0.85rem;
-  font-weight: 600; border: 1.5px solid var(--border);
-  background: var(--bg); cursor: pointer; font-family: var(--font);
-  color: var(--text-lt); transition: all 0.15s;
+.hyg-panel-header {
+  padding: 0.9rem 1.25rem; display: flex; align-items: center;
+  gap: 0.7rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg,#FAF5FF,#EDE9FE);
 }
-.zone-tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-.zone-tab-btn .tab-count {
-  background: rgba(255,255,255,0.3); border-radius: 99px;
-  padding: 0 0.4rem; font-size: 0.75rem; margin-left: 0.2rem;
-}
-
-/* ── Print ── */
-@media print {
-  .no-print, nav, .navbar, .mobile-menu { display: none !important; }
-  .hygiene-legend { position: static; top: auto; }
-  .hyg-check { border: 1px solid #999; font-size: 1rem; width: 28px; height: 28px; }
-  .hygiene-row { padding: 0.3rem 0.5rem; }
-  .stu-name { font-size: 14pt; }
-  .stu-class { font-size: 12pt; }
-}
+.hyg-panel-header h3 { font-size: 0.97rem; font-weight: 700; }
+.hyg-panel-body { padding: 1.1rem 1.25rem; }
 </style>
 </head>
 <body>
@@ -116,9 +134,9 @@
     <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
     <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวร</a>
     <a href="hygiene.html"><i class="fas fa-heartbeat"></i> สุขลักษณะ</a>
+    <a href="hygiene-dashboard.html"><i class="fas fa-chart-bar"></i> Dashboard สุขลักษณะ</a>
     <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
     <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
-    <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน</a>
   </div>
   <button class="navbar-hamburger no-print" id="hamburger-btn"><span></span><span></span><span></span></button>
 </nav>
@@ -126,8 +144,9 @@
   <a href="index.html"><i class="fas fa-home"></i> หน้าหลัก</a>
   <a href="check.html"><i class="fas fa-clipboard-check"></i> ตรวจเวรความสะอาด</a>
   <a href="hygiene.html"><i class="fas fa-heartbeat"></i> ตรวจสุขลักษณะ</a>
+  <a href="hygiene-dashboard.html"><i class="fas fa-chart-bar"></i> Dashboard สุขลักษณะ</a>
   <a href="hygiene-report.html"><i class="fas fa-file-medical"></i> รายงานสุขลักษณะ</a>
-  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard ตรวจเวร</a>
   <a href="report.html"><i class="fas fa-file-alt"></i> รายงาน PDF</a>
 </div>
 
@@ -135,24 +154,24 @@
 <div class="container">
 
   <div class="page-header">
-    <div class="page-title"><i class="fas fa-heartbeat" style="color:#EC4899;"></i> ตรวจสุขลักษณะนักเรียน</div>
-    <div class="page-subtitle">โรงเรียนบ้านใหม่ — บันทึกผลการตรวจ ผม | ช้อน | แก้วน้ำ | แปรงสีฟัน | ร่างกาย</div>
+    <div class="page-title"><i class="fas fa-heartbeat" style="color:#A855F7;"></i> ตรวจสุขลักษณะนักเรียน</div>
+    <div class="page-subtitle">โรงเรียนบ้านใหม่ — ทรงผม | ช้อน | แก้วน้ำ | แปรงสีฟัน | ยาสีฟัน</div>
   </div>
 
-  <!-- FILTER -->
-  <div class="check-panel no-print">
-    <div class="panel-header blue">
-      <i class="fas fa-sliders-h" style="color:var(--primary);"></i>
+  <!-- STEP 1: ข้อมูลพื้นฐาน -->
+  <div class="hyg-panel">
+    <div class="hyg-panel-header">
+      <div class="panel-num">1</div>
       <h3>ข้อมูลการตรวจ</h3>
     </div>
-    <div class="panel-body">
+    <div class="hyg-panel-body">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">วันที่ตรวจ <span class="req">*</span></label>
           <input type="date" class="form-control" id="hygiene-date">
         </div>
         <div class="form-group">
-          <label class="form-label">ชื่อผู้ตรวจ <span class="req">*</span></label>
+          <label class="form-label">ชื่อครูผู้ตรวจ <span class="req">*</span></label>
           <input type="text" class="form-control" id="hygiene-inspector" placeholder="ชื่อ-สกุล ครูผู้ตรวจ">
         </div>
       </div>
@@ -162,40 +181,52 @@
     </div>
   </div>
 
-  <!-- ZONE TABS -->
-  <div id="zone-tabs-wrap" style="display:none;" class="card" style="overflow:hidden;">
-    <div class="zone-tabs" id="zone-tabs"></div>
+  <!-- STEP 2: รายชื่อ (ซ่อนจนกว่าจะกดโหลด) -->
+  <div id="filter-wrap" style="display:none;">
+    <div class="hyg-panel">
+      <div class="hyg-panel-header">
+        <div class="panel-num" style="background:#A855F7;">2</div>
+        <h3>บันทึกผลการตรวจ</h3>
+        <span style="margin-left:auto; font-size:0.82rem; color:var(--text-lt);" id="filter-label"></span>
+      </div>
 
-    <!-- LEGEND -->
-    <div class="hygiene-legend">
-      <div style="font-size:0.78rem; font-weight:700; color:var(--text-lt);">ชื่อนักเรียน</div>
-      <div class="legend-label">🪮<br>ผม</div>
-      <div class="legend-label">🥄<br>ช้อน</div>
-      <div class="legend-label">🥤<br>แก้วน้ำ</div>
-      <div class="legend-label">🪥<br>แปรงสีฟัน</div>
-      <div class="legend-label">🧼<br>ร่างกาย</div>
+      <!-- CLASS FILTER TABS -->
+      <div class="class-tabs-wrap" id="class-tabs"></div>
+
+      <!-- LEGEND -->
+      <div class="hygiene-legend">
+        <div style="font-size:0.75rem; font-weight:700; color:var(--text-lt);">ชื่อนักเรียน<br><span style="font-weight:400;">(กดชื่อเพื่อใส่หมายเหตุ)</span></div>
+        <div class="legend-col">🪮<br>ผม</div>
+        <div class="legend-col">🥄<br>ช้อน</div>
+        <div class="legend-col">🥤<br>แก้วน้ำ</div>
+        <div class="legend-col">🪥<br>แปรงสีฟัน</div>
+        <div class="legend-col">🪥<br>ยาสีฟัน</div>
+      </div>
+
+      <!-- LIST -->
+      <div id="hygiene-list"></div>
+
+      <!-- SUMMARY -->
+      <div class="summary-bar">
+        <div class="sum-row1">
+          <div class="sum-item"><div class="sum-dot" style="background:var(--accent);"></div><span id="sum-pass"></span></div>
+          <div class="sum-item"><div class="sum-dot" style="background:var(--danger);"></div><span id="sum-fail"></span></div>
+          <div class="sum-item"><span id="sum-total" style="color:var(--text-lt);"></span></div>
+        </div>
+        <div class="sum-items-detail" id="sum-items"></div>
+      </div>
     </div>
 
-    <!-- STUDENT LIST -->
-    <div id="hygiene-list"></div>
-
-    <!-- SUMMARY BAR -->
-    <div class="summary-bar" id="summary-bar">
-      <div class="sum-item"><div class="sum-dot" style="background:var(--accent);"></div><span id="sum-pass">ผ่านทั้งหมด: 0</span></div>
-      <div class="sum-item"><div class="sum-dot" style="background:var(--danger);"></div><span id="sum-fail">ไม่ผ่านบางรายการ: 0</span></div>
-      <div class="sum-item"><span id="sum-total" style="color:var(--text-lt);"></span></div>
-    </div>
-  </div>
-
-  <!-- ACTION BUTTONS -->
-  <div id="action-btns" style="display:none; margin-top:1rem;" class="no-print">
-    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-      <button class="btn btn-primary btn-lg" style="flex:1;" onclick="saveHygiene()">
-        <i class="fas fa-save"></i> บันทึกผลการตรวจ
-      </button>
-      <button class="btn btn-secondary" onclick="markAllPass()">
-        <i class="fas fa-check-double"></i> ผ่านทั้งหมด
-      </button>
+    <!-- ACTION BUTTONS -->
+    <div id="action-btns" style="display:none;">
+      <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-lg" style="flex:2;" onclick="saveHygiene()">
+          <i class="fas fa-save"></i> บันทึกผลการตรวจ
+        </button>
+        <button class="btn btn-secondary" style="flex:1;" onclick="markAllPass()">
+          <i class="fas fa-check-double"></i> ผ่านทั้งหมด
+        </button>
+      </div>
     </div>
   </div>
 

@@ -127,7 +127,7 @@ function createSheet(ss, name) {
     Attendance:     ['attendance_id','check_id','student_id','status','note'],
     Photos:         ['photo_id','check_id','type','drive_url','uploaded_at'],
     BehaviorScore:  ['score_id','student_id','date','type','category_id','category_name','points','note','teacher','created_at'],
-    HygieneCheck:   ['hygiene_id','student_id','date','month','year','haircut','spoon','glass','toothbrush','body_clean','note','inspector','created_at'],
+    HygieneCheck:   ['hygiene_id','student_id','date','month','year','haircut','spoon','glass','toothbrush','toothpaste','note','inspector','created_at'],
     ScoreCategory:  ['cat_id','name','default_points','type','icon','active'],
   };
   if (headers[name]) {
@@ -1096,7 +1096,7 @@ function handleSaveHygieneCheck(body) {
       rec.spoon      ? 'pass' : 'fail',   // ช้อน
       rec.glass      ? 'pass' : 'fail',   // แก้วน้ำ
       rec.toothbrush ? 'pass' : 'fail',   // แปรงสีฟัน
-      rec.body_clean ? 'pass' : 'fail',   // ร่างกาย
+      rec.toothpaste ? 'pass' : 'fail',   // ยาสีฟัน
       rec.note       || '',
       body.inspector,
       timestamp,
@@ -1159,12 +1159,12 @@ function handleGetHygieneChecks(params) {
       spoon:       r.spoon      === 'pass',
       glass:       r.glass      === 'pass',
       toothbrush:  r.toothbrush === 'pass',
-      body_clean:  r.body_clean === 'pass',
+      body_clean:  r.toothpaste === 'pass',
       note:        r.note       || '',
       inspector:   r.inspector  || '',
       created_at:  r.created_at || '',
       // คะแนนรวม (5 รายการ)
-      score: [r.haircut,r.spoon,r.glass,r.toothbrush,r.body_clean]
+      score: [r.haircut,r.spoon,r.glass,r.toothbrush,r.toothpaste]
                .filter(function(v){return v==='pass';}).length,
     };
   });
@@ -1209,11 +1209,11 @@ function handleGetHygieneReport(params) {
         class: s.class, room: s.room,
         checked: false,
         haircut: null, spoon: null, glass: null,
-        toothbrush: null, body_clean: null,
+        toothbrush: null, toothpaste: null,
         score: 0, note: '', inspector: '', date: '',
       };
     }
-    var score = [r.haircut,r.spoon,r.glass,r.toothbrush,r.body_clean]
+    var score = [r.haircut,r.spoon,r.glass,r.toothbrush,r.toothpaste]
                   .filter(function(v){return v==='pass';}).length;
     return {
       student_id: s.student_id, fullname: s.fullname,
@@ -1223,7 +1223,7 @@ function handleGetHygieneReport(params) {
       spoon:      r.spoon      === 'pass',
       glass:      r.glass      === 'pass',
       toothbrush: r.toothbrush === 'pass',
-      body_clean: r.body_clean === 'pass',
+      body_clean: r.toothpaste === 'pass',
       score:      score,
       note:       r.note     || '',
       inspector:  r.inspector|| '',
@@ -1238,7 +1238,7 @@ function handleGetHygieneReport(params) {
   var failSpoon    = checked.filter(function(r){return !r.spoon;}).length;
   var failGlass    = checked.filter(function(r){return !r.glass;}).length;
   var failToothbrush = checked.filter(function(r){return !r.toothbrush;}).length;
-  var failBody     = checked.filter(function(r){return !r.body_clean;}).length;
+  var failBody     = checked.filter(function(r){return !r.toothpaste;}).length;
 
   // วันที่ตรวจ (unique)
   var dates = [...new Set(monthRows.map(function(r){return formatDate(r.date);}))].sort();
@@ -1273,7 +1273,7 @@ function initHygieneSheet() {
     sheet = ss.insertSheet(name);
     sheet.getRange(1,1,1,13).setValues([[
       'hygiene_id','student_id','date','month','year',
-      'haircut','spoon','glass','toothbrush','body_clean',
+      'haircut','spoon','glass','toothbrush','toothpaste',
       'note','inspector','created_at'
     ]]);
     Logger.log('HygieneCheck sheet created with headers');
