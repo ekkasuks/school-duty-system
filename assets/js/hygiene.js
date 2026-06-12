@@ -8,7 +8,7 @@ const HYGIENE_ITEMS = [
   { key: 'spoon',      label: 'ช้อน',        icon: '🥄' },
   { key: 'glass',      label: 'แก้วน้ำ',     icon: '🥤' },
   { key: 'toothbrush', label: 'แปรงสีฟัน',  icon: '🪥' },
-  { key: 'body_clean', label: 'ยาสีฟัน',    icon: '🪥' },
+  { key: 'toothpaste', label: 'ยาสีฟัน',    icon: '🫧' },
 ];
 
 let studentsAll  = [];
@@ -41,7 +41,7 @@ async function loadStudents() {
     studentsAll.forEach(s => {
       hygieneMap[s.student_id] = {
         haircut: true, spoon: true, glass: true,
-        toothbrush: true, body_clean: true, note: '',
+        toothbrush: true, toothpaste: true, note: '',
       };
     });
 
@@ -56,7 +56,7 @@ async function loadStudents() {
           spoon:      r.spoon,
           glass:      r.glass,
           toothbrush: r.toothbrush,
-          body_clean: r.body_clean,
+          toothpaste: r.body_clean,
           note:       r.note || '',
         };
       }
@@ -251,7 +251,7 @@ async function saveHygiene() {
       spoon:       hygieneMap[s.student_id]?.spoon      ?? true,
       glass:       hygieneMap[s.student_id]?.glass      ?? true,
       toothbrush:  hygieneMap[s.student_id]?.toothbrush ?? true,
-      body_clean:  hygieneMap[s.student_id]?.body_clean ?? true,
+      toothpaste:  hygieneMap[s.student_id]?.toothpaste ?? true,
       note:        hygieneMap[s.student_id]?.note       || '',
     }));
 

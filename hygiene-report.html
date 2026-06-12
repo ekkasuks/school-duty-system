@@ -213,7 +213,7 @@ function renderReport(d) {
       <td class="pass-cell">${r.checked?pc(r.spoon):'—'}</td>
       <td class="pass-cell">${r.checked?pc(r.glass):'—'}</td>
       <td class="pass-cell">${r.checked?pc(r.toothbrush):'—'}</td>
-      <td class="pass-cell">${r.checked?pc(r.body_clean):'—'}</td>
+      <td class="pass-cell">${r.checked?pc(r.toothpaste):'—'}</td>
       <td>${r.checked?`<div class="score-wrap">
         <div class="progress-bar" style="flex:1;min-width:45px;">
           <div class="progress-fill ${r.score===5?'green':r.score<3?'red':''}" style="width:${r.score/5*100}%"></div>
@@ -248,7 +248,7 @@ function printReport() {
       <div class="pr-br"><span style="font-weight:bold;">ผ่านทุกรายการ (5/5)</span><span>${passAll} คน</span></div>
       <div class="pr-br"><span style="font-weight:bold;">วันที่ตรวจ</span><span>${d.check_dates.map(formatThaiDate).join(', ')||'—'}</span></div>
       <div style="font-size:13pt;color:#555;margin-top:0.15cm;">
-        รายการไม่ผ่าน: ผม ${fs.haircut} | ช้อน ${fs.spoon} | แก้วน้ำ ${fs.glass} | แปรงสีฟัน ${fs.toothbrush} | ยาสีฟัน ${fs.body_clean}
+        รายการไม่ผ่าน: ผม ${fs.haircut} | ช้อน ${fs.spoon} | แก้วน้ำ ${fs.glass} | แปรงสีฟัน ${fs.toothbrush} | ยาสีฟัน ${fs.toothpaste}
       </div>
     </div>
 
@@ -273,7 +273,7 @@ function printReport() {
           <td class="pr-c">${!r.checked?'—':r.spoon?'✅':'❌'}</td>
           <td class="pr-c">${!r.checked?'—':r.glass?'✅':'❌'}</td>
           <td class="pr-c">${!r.checked?'—':r.toothbrush?'✅':'❌'}</td>
-          <td class="pr-c">${!r.checked?'—':r.body_clean?'✅':'❌'}</td>
+          <td class="pr-c">${!r.checked?'—':r.toothpaste?'✅':'❌'}</td>
           <td class="pr-c" style="font-weight:bold;">${r.checked?r.score+'/5':'—'}</td>
         </tr>`).join('')}
       </tbody>
