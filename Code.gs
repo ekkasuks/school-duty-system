@@ -111,8 +111,15 @@ function doPost(e) {
 }
 
 // ─── UTILITY HELPERS ─────────────────────────────────────────
+// Request-scoped cache: globals reset each execution, so this is safe
+// and cuts repeated SpreadsheetApp.openById() round-trips.
+var _ssCache = null;
+function getSpreadsheet() {
+  if (!_ssCache) _ssCache = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  return _ssCache;
+}
 function getSheet(name) {
-  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const ss = getSpreadsheet();
   let sheet = ss.getSheetByName(name);
   if (!sheet) sheet = createSheet(ss, name);
   return sheet;
@@ -265,12 +272,17 @@ function handleDailyCheck(body) {
     Utilities.formatDate(now, 'Asia/Bangkok', 'yyyy-MM-dd HH:mm:ss'),
   ]);
 
-  // 2. Save Attendance rows
+  // 2. Save Attendance rows — batched into ONE write (append below last row).
+  //    Same 5-column order as before, so existing data is untouched.
   const attSheet = getSheet(CONFIG.SHEETS.ATTENDANCE);
-  (body.attendance || []).forEach((att, idx) => {
-    const attId = 'ATT' + Date.now().toString(36) + idx;
-    attSheet.appendRow([attId, checkId, att.student_id, att.status, att.note || '']);
-  });
+  const attList  = body.attendance || [];
+  if (attList.length) {
+    const stamp   = Date.now().toString(36);
+    const attRows = attList.map(function(att, idx) {
+      return ['ATT' + stamp + idx, checkId, att.student_id, att.status, att.note || ''];
+    });
+    attSheet.getRange(attSheet.getLastRow() + 1, 1, attRows.length, 5).setValues(attRows);
+  }
 
   return jsonResponse({ check_id: checkId, saved: true });
 }
@@ -367,8 +379,12 @@ function handleGetDashboard(params) {
   const att      = sheetToObjects(getSheet(CONFIG.SHEETS.ATTENDANCE));
   const zones    = sheetToObjects(getSheet(CONFIG.SHEETS.ZONES));
 
+  // Precompute each check's date string ONCE (formatDate is expensive).
+  // Reused by the today-filter and both trend windows below.
+  checks.forEach(c => { c._d = formatDate(c.date); });
+
   // Today's checks
-  const todayChecks = checks.filter(c => formatDate(c.date) === targetDate);
+  const todayChecks = checks.filter(c => c._d === targetDate);
 
   // Avg star today
   const avgStar = todayChecks.length > 0
@@ -413,18 +429,30 @@ function handleGetDashboard(params) {
 }
 
 function buildTrend(checks, days) {
-  const result  = [];
-  // ใช้เวลาปัจจุบันใน Bangkok timezone เพื่อหลีกเลี่ยง UTC shift
-  const nowBkk  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(nowBkk);
-    d.setDate(d.getDate() - i);
-    const dateStr   = Utilities.formatDate(d, 'Asia/Bangkok', 'yyyy-MM-dd');
-    const dayChecks = checks.filter(c => formatDate(c.date) === dateStr);
-    const avg = dayChecks.length > 0
-      ? dayChecks.reduce((s,c) => s + Number(c.star_rating), 0) / dayChecks.length
-      : null;
-    result.push({ date: dateStr, avg_star: avg !== null ? Math.round(avg * 10)/10 : null, count: dayChecks.length });
+  // Bucket every check by its precomputed date string ONCE → O(rows).
+  // (c._d is set by handleGetDashboard; fall back to formatDate if absent.)
+  const bucket = {};
+  for (var i = 0; i < checks.length; i++) {
+    const c = checks[i];
+    const d = c._d || formatDate(c.date);
+    if (!bucket[d]) bucket[d] = { sum: 0, n: 0 };
+    bucket[d].sum += Number(c.star_rating);
+    bucket[d].n++;
+  }
+
+  // Then just look up each of the last `days` dates → O(days).
+  const result = [];
+  const nowBkk = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+  for (var j = days - 1; j >= 0; j--) {
+    const dt      = new Date(nowBkk);
+    dt.setDate(dt.getDate() - j);
+    const dateStr = Utilities.formatDate(dt, 'Asia/Bangkok', 'yyyy-MM-dd');
+    const b       = bucket[dateStr];
+    result.push({
+      date:     dateStr,
+      avg_star: b ? Math.round(b.sum / b.n * 10) / 10 : null,
+      count:    b ? b.n : 0,
+    });
   }
   return result;
 }
