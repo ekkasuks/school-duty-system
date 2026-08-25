@@ -3,7 +3,7 @@
 // ============================================================
 
 // ★ เปลี่ยน URL ตรงนี้หลัง Deploy Apps Script แล้ว ★
-const API_URL = 'https://script.google.com/macros/s/AKfycbw0ctPMWD7PiX4OMA5aOrKfset23KXfw8UKQFUrlJuv0RRUwu9HphOF1pQNFTUYBkqi2Q/exec';
+const API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
 
 // ─── ตรวจสอบ URL ก่อนใช้งาน ────────────────────────────────
 function checkApiUrl() {
@@ -123,7 +123,8 @@ const PhotoAPI = {
 
 // ─── DASHBOARD ───────────────────────────────────────────────
 const DashboardAPI = {
-  get: (date) => apiGet('dashboard', { date }),
+  get:        (date) => apiGet('dashboard', { date }),
+  zoneStatus: (date) => apiGet('zoneStatus', { date }),  // lightweight — for check-page board
 };
 
 // ─── REPORT ──────────────────────────────────────────────────

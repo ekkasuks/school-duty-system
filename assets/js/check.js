@@ -29,9 +29,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initPage() {
   try {
-    zonesAll = (await getCachedZones()).filter(z => String(z.active).toUpperCase() === 'TRUE');
+    // โหลด zones และสถานะเขตพร้อมกัน (parallel) — ลดเวลารอครึ่งหนึ่งตอนเปิดหน้า
+    const date = document.getElementById('check-date').value || todayISO();
+    const [zones, status] = await Promise.all([
+      getCachedZones(),
+      DashboardAPI.zoneStatus(date).catch(() => ({ checked_zones: [] })),
+    ]);
+    zonesAll = zones.filter(z => String(z.active).toUpperCase() === 'TRUE');
     populateZoneSelect();
-    await refreshBoard();
+
+    todayCheckedZones = {};
+    (status.checked_zones || []).forEach(z => {
+      todayCheckedZones[z.zone_id] = { avg: z.avg };
+    });
+    renderZoneBoard();
   } catch (e) {
     Toast.error('โหลดข้อมูลไม่สำเร็จ: ' + e.message);
   }
@@ -55,10 +66,10 @@ function populateZoneSelect() {
 async function refreshBoard() {
   const date = document.getElementById('check-date').value || todayISO();
   try {
-    const dash = await DashboardAPI.get(date);
-    // สร้าง map ของ zone ที่ตรวจแล้ว
+    // ใช้ endpoint แบบเบา — อ่านเฉพาะ DailyCheck ของวันนี้ (ไม่โหลด trend/ranking)
+    const res = await DashboardAPI.zoneStatus(date);
     todayCheckedZones = {};
-    (dash.zone_ranking || []).forEach(z => {
+    (res.checked_zones || []).forEach(z => {
       todayCheckedZones[z.zone_id] = { avg: z.avg };
     });
     renderZoneBoard();
