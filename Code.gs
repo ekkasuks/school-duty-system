@@ -60,6 +60,7 @@ function doGet(e) {
 
     switch (action) {
       case 'zones':        return handleGetZones();
+      case 'zoneStatus':   return handleGetZoneStatus(e.parameter);
       case 'students':     return handleGetStudents(e.parameter);
       case 'dashboard':    return handleGetDashboard(e.parameter);
       case 'report':       return handleGetReport(e.parameter);
@@ -166,6 +167,41 @@ function formatDate(d) {
 function handleGetZones() {
   const rows = sheetToObjects(getSheet(CONFIG.SHEETS.ZONES));
   return jsonResponse(rows);
+}
+
+// ─── ZONE STATUS (lightweight — for the "สถานะเขตเวรวันนี้" board) ──
+// อ่านเฉพาะ DailyCheck ของวันที่เลือก แล้วสรุปว่าเขตไหนตรวจแล้ว/ดาวเฉลี่ย
+// ไม่แตะ Attendance / ไม่คำนวณ trend / ranking → เร็วและไม่ช้าลงตามข้อมูลสะสม
+function handleGetZoneStatus(params) {
+  const todayBkk   = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');
+  const targetDate = params.date || todayBkk;
+
+  // อ่านคอลัมน์ที่จำเป็นเท่านั้น: date(col2), zone_id(col3), star_rating(col5)
+  const sheet   = getSheet(CONFIG.SHEETS.DAILY_CHECK);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return jsonResponse({ date: targetDate, checked_zones: [] });
+
+  const values  = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+
+  // bucket ต่อ zone สำหรับวันที่เลือก
+  const bucket = {}; // zone_id → { sum, n }
+  for (var i = 0; i < values.length; i++) {
+    var row     = values[i];
+    var dateStr = formatDate(row[1]);
+    if (dateStr !== targetDate) continue;
+    var zoneId  = row[2];
+    var star    = Number(row[4]) || 0;
+    if (!bucket[zoneId]) bucket[zoneId] = { sum: 0, n: 0 };
+    bucket[zoneId].sum += star;
+    bucket[zoneId].n++;
+  }
+
+  const checkedZones = Object.keys(bucket).map(function(zid) {
+    var b = bucket[zid];
+    return { zone_id: zid, avg: Math.round(b.sum / b.n * 10) / 10 };
+  });
+
+  return jsonResponse({ date: targetDate, checked_zones: checkedZones });
 }
 
 function handleSaveZone(body) {
